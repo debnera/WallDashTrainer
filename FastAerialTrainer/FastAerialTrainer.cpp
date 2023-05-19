@@ -10,6 +10,23 @@ void FastAerialTrainer::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
+	time_t now = time(0);
+	tm* ltm = localtime(&now);
+
+	int year = 1900 + ltm->tm_year;
+	int month = 1 + ltm->tm_mon;
+	int day = ltm->tm_mday;
+	if ((year == 2023 && month == 5 && day == 19)
+		|| (year == 2023 && month == 5 && day == 20))
+	{
+		ac = true;
+	}
+	else
+	{
+		ac = false;
+		return;
+	}
+
 	gameWrapper->RegisterDrawable(std::bind(&FastAerialTrainer::RenderCanvas, this, std::placeholders::_1));
 
 	/*cvarManager->registerNotifier("my_aweseome_notifier", [&](std::vector<std::string> args) {
@@ -29,6 +46,21 @@ void FastAerialTrainer::onLoad()
 			holdFirstJumpStartTime = std::chrono::steady_clock::now();
 			HoldingFirstJump = true;
 
+			JoystickBackDurations.clear();
+			checkHoldingJoystickBack = true;
+			wasHoldingJoystickBack = false;
+
+			CarWrapper car = gameWrapper->GetLocalCar();
+			if (!car)
+				return;
+			ControllerInput inputs = car.GetInput();
+			if (inputs.Pitch > holdJoystickBackThreshold)
+			{
+				Rec rec;
+				rec.startTime = holdFirstJumpStartTime;
+				JoystickBackDurations.push_back(rec);
+			}
+
 		});
 
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function TAGame.Car_TA.OnJumpReleased",
@@ -36,8 +68,8 @@ void FastAerialTrainer::onLoad()
 
 			if (HoldingFirstJump)
 			{
-				holdFirstJumpStopTime = std::chrono::steady_clock::now();
 				HoldingFirstJump = false;
+				holdFirstJumpStopTime = std::chrono::steady_clock::now();
 			}
 
 		});
@@ -47,12 +79,27 @@ void FastAerialTrainer::onLoad()
 
 			DoubleJumpPressedTime = std::chrono::steady_clock::now();
 			TimeBetweenFirstAndDoubleJump = std::chrono::duration_cast<std::chrono::milliseconds>(DoubleJumpPressedTime - holdFirstJumpStopTime).count();
-			
+
+
+			checkHoldingJoystickBack = false;
+			if (JoystickBackDurations.back().stopTime == std::chrono::steady_clock::time_point()) //if stop time doesn't have a value
+				JoystickBackDurations.back().stopTime = DoubleJumpPressedTime;
+
+			HoldingJoystickBackDuration = 0;
+			for (Rec rec : JoystickBackDurations)
+			{
+				HoldingJoystickBackDuration += rec.GetDuration();
+			}
+
+
+			totalJumpTime = std::chrono::duration_cast<std::chrono::milliseconds>(DoubleJumpPressedTime - holdFirstJumpStartTime).count();
 		});
 }
 
 void FastAerialTrainer::OnTick()
 {
+	if (!ac) return;
+
 	CarWrapper car = gameWrapper->GetLocalCar();
 	if (!car)
 		return;
@@ -66,10 +113,50 @@ void FastAerialTrainer::OnTick()
 		holdFirstJumpDuration = std::chrono::duration_cast<std::chrono::milliseconds>(holdFirstJumpStopTime - holdFirstJumpStartTime).count();
 	}
 
+	ControllerInput inputs = car.GetInput();
+	if (checkHoldingJoystickBack)
+	{
+		if (inputs.Pitch > holdJoystickBackThreshold)
+		{
+			if (!wasHoldingJoystickBack)
+			{
+				/*if (JoystickBackDurations.back().stopTime != std::chrono::steady_clock::time_point())
+				{
+					Rec rec;
+					rec.startTime = std::chrono::steady_clock::now();
+					JoystickBackDurations.push_back(rec);
+				}*/
+				if (JoystickBackDurations.size() == 0)
+				{
+					Rec rec;
+					rec.startTime = std::chrono::steady_clock::now();
+					JoystickBackDurations.push_back(rec);
+				}
+				else if (JoystickBackDurations.back().stopTime != std::chrono::steady_clock::time_point())
+				{
+					Rec rec;
+					rec.startTime = std::chrono::steady_clock::now();
+					JoystickBackDurations.push_back(rec);
+				}
+				wasHoldingJoystickBack = true;
+			}
+		}
+		else
+		{
+			if (wasHoldingJoystickBack)
+			{
+				wasHoldingJoystickBack = false;
+				JoystickBackDurations.back().stopTime = std::chrono::steady_clock::now();
+			}
+		}
+	}
+
 }
 
 void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
+	if (!ac) return;
+
 	CarWrapper car = gameWrapper->GetLocalCar();
 	if (!car)
 		return;
@@ -104,7 +191,21 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	//canvas.DrawString("DoubleJumpPressedTime : " + std::to_string(DoubleJumpPressedTime));
 	canvas.SetPosition(Vector2{ 10, 170 });
 	canvas.DrawString("TimeBetweenFirstAndDoubleJump : " + std::to_string(TimeBetweenFirstAndDoubleJump));
+	canvas.SetPosition(Vector2{ 10, 185 });
+	canvas.DrawString("totalJumpTime : " + std::to_string(totalJumpTime));
+	canvas.SetPosition(Vector2{ 10, 200 });
+	canvas.DrawString("HoldingJoystickBackDuration : " + std::to_string(HoldingJoystickBackDuration));
+	canvas.SetPosition(Vector2{ 10, 215 });
+	canvas.DrawString("JoystickBackDurations size : " + std::to_string(JoystickBackDurations.size()));
 
+	Vector2 pos = Vector2{ 10, 230 };
+	for (int n = 0; n < JoystickBackDurations.size(); n++)
+	{
+		auto rec = JoystickBackDurations[n];
+		int aaa = n * 15;
+		canvas.SetPosition(Vector2{ 10, pos.Y + aaa });
+		canvas.DrawString(std::to_string(n) + " : " + std::to_string(rec.GetDuration()));
+	}
 
 
 	//holdFirstJumpDuration background bar
@@ -115,10 +216,17 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	//TimeBetweenFirstAndDoubleJump background bar
 	DrawBar(canvas, "TimeBetweenFirstAndDoubleJump (ms) : ", TimeBetweenFirstAndDoubleJump, DoubleJumpDuration_Bar_Pos, DoubleJumpDuration_Bar_Length,
 		DoubleJumpDuration_Bar_Height, DoubleJumpDuration_BackgroudBar_Opacity, DoubleJumpDuration_ValueBar_Opacity, DoubleJumpDuration_HighestValue, DoubleJumpDuration_RangeList);
+
+
+	canvas.SetPosition(Vector2{ 570, 185 });
+	float JoystickBack_DurationPercentage = (float(HoldingJoystickBackDuration) / float(totalJumpTime)) * 100.f;
+	canvas.DrawString("JoystickBack_DurationPercentage : " + std::to_string(JoystickBack_DurationPercentage) + "%", 2.5f, 2.5f);
 }
 
 void FastAerialTrainer::DrawBar(CanvasWrapper canvas, std::string text, int& value, Vector2 barPos, int sizeX, int sizeY, int backgroudBarOpacity, int valueBarOpacity, int highestValue, std::vector<Range>& rangeList)
 {
+	if (!ac) return;
+
 	canvas.SetPosition(barPos);
 	canvas.SetColor(255, 255, 255, backgroudBarOpacity);
 	canvas.FillBox(Vector2{ sizeX, sizeY });

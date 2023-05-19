@@ -24,10 +24,28 @@ struct Range
 	}
 };
 
+struct Rec
+{
+	std::chrono::steady_clock::time_point startTime;
+	std::chrono::steady_clock::time_point stopTime;
+	int GetDuration() {
+		if (stopTime == std::chrono::steady_clock::time_point())
+		{
+			return 0;
+		}
+		else
+		{
+			return std::chrono::duration_cast<std::chrono::milliseconds>(stopTime - startTime).count();
+		}
+	}
+};
+
 class FastAerialTrainer: public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow/*, public BakkesMod::Plugin::PluginWindow*/
 {
 
 	//std::shared_ptr<bool> enabled;
+
+	bool ac = false;
 
 	bool HoldingFirstJump = false;
 	std::chrono::steady_clock::time_point holdFirstJumpStartTime;
@@ -67,6 +85,19 @@ class FastAerialTrainer: public BakkesMod::Plugin::BakkesModPlugin, public Bakke
 		Range(Vector2{71, 90}, 0, 255, 0),
 		Range(Vector2{91, 110}, 255, 255, 0)
 	};
+
+
+	bool checkHoldingJoystickBack = false;
+	bool wasHoldingJoystickBack = false;
+	float holdJoystickBackThreshold = 0.1;
+	std::chrono::steady_clock::time_point holdJoystickBackStartTime;
+	std::chrono::steady_clock::time_point holdJoystickBackStopTime;
+	int HoldingJoystickBackDuration;
+	std::vector<Rec> JoystickBackDurations;
+	bool PushedRecInstant = false;
+
+
+	int totalJumpTime;
 
 
 	void DrawBar(CanvasWrapper canvas, std::string text, int& value, Vector2 barPos, int sizeX, int sizeY, int backgroudBarOpacity, int valueBarOpacity, int highestValue, std::vector<Range>& rangeList);
