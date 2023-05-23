@@ -45,7 +45,6 @@ class FastAerialTrainer: public BakkesMod::Plugin::BakkesModPlugin, public Bakke
 
 	//std::shared_ptr<bool> enabled;
 
-	bool ac = false;
 
 	bool HoldingFirstJump = false;
 	std::chrono::steady_clock::time_point holdFirstJumpStartTime;
@@ -60,30 +59,30 @@ class FastAerialTrainer: public BakkesMod::Plugin::BakkesModPlugin, public Bakke
 	int JumpDuration_Bar_Height = 30;
 	int JumpDuration_BackgroudBar_Opacity = 150;
 	int JumpDuration_ValueBar_Opacity = 210;
-	int JumpDuration_HighestValue = 400;
+	int JumpDuration_HighestValue = 260;
 	//std::vector<int> JumpDuration_RangeList = { 140, 180, 220, 260 };
 	std::vector<Range> JumpDuration_RangeList = 
 	{ 
-		Range(Vector2{0, 140}, 255, 0, 0),
-		Range(Vector2{141, 180}, 255, 255, 0),
-		Range(Vector2{181, 220}, 0, 255, 0),
-		Range(Vector2{221, 260}, 255, 255, 0)
+		Range(Vector2{0, 140}, 255, 0, 0), //red
+		Range(Vector2{141, 180}, 255, 255, 0), //yellow
+		Range(Vector2{181, 220}, 0, 255, 0), //green
+		Range(Vector2{221, 260}, 255, 255, 0) //yellow
 	};
 
 
-	Vector2 DoubleJumpDuration_Bar_Pos = { 570, 100 };
+	Vector2 DoubleJumpDuration_Bar_Pos = { 570, 86 };
 	int DoubleJumpDuration_Bar_Length = 825;
 	int DoubleJumpDuration_Bar_Height = 30;
-	int DoubleJumpDuration_BackgroudBar_Opacity = 150;
-	int DoubleJumpDuration_ValueBar_Opacity = 210;
-	int DoubleJumpDuration_HighestValue = 400;
+	int DoubleJumpDuration_BackgroudBar_Opacity = 130;
+	int DoubleJumpDuration_ValueBar_Opacity = 224;
+	int DoubleJumpDuration_HighestValue = 130;
 	//std::vector<int> DoubleJumpDuration_RangeList = { 50, 70, 90, 110 };
 	std::vector<Range> DoubleJumpDuration_RangeList =
 	{
-		Range(Vector2{0, 50}, 255, 0, 0),
-		Range(Vector2{51, 70}, 255, 255, 0),
-		Range(Vector2{71, 90}, 0, 255, 0),
-		Range(Vector2{91, 110}, 255, 255, 0)
+		Range(Vector2{0, 50}, 255, 0, 0), //red
+		Range(Vector2{51, 70}, 255, 255, 0), //yellow
+		Range(Vector2{71, 90}, 0, 255, 0), //green
+		Range(Vector2{91, 110}, 255, 255, 0) //yellow
 	};
 
 
@@ -94,7 +93,6 @@ class FastAerialTrainer: public BakkesMod::Plugin::BakkesModPlugin, public Bakke
 	std::chrono::steady_clock::time_point holdJoystickBackStopTime;
 	int HoldingJoystickBackDuration;
 	std::vector<Rec> JoystickBackDurations;
-	bool PushedRecInstant = false;
 
 
 	int totalJumpTime;

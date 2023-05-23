@@ -14,8 +14,6 @@ void FastAerialTrainer::SetImGuiContext(uintptr_t ctx) {
 //  f2 -> plugins -> FastAerialTrainer
 void FastAerialTrainer::RenderSettings() 
 {
-	if (!ac) return;
-
 	ImGui::Text("First Jump Duration Bar :");
 
 	ImGui::NewLine();

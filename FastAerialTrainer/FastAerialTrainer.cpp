@@ -10,22 +10,6 @@ void FastAerialTrainer::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
-	time_t now = time(0);
-	tm* ltm = localtime(&now);
-
-	int year = 1900 + ltm->tm_year;
-	int month = 1 + ltm->tm_mon;
-	int day = ltm->tm_mday;
-	if ((year == 2023 && month == 5 && day == 19)
-		|| (year == 2023 && month == 5 && day == 20))
-	{
-		ac = true;
-	}
-	else
-	{
-		ac = false;
-		return;
-	}
 
 	gameWrapper->RegisterDrawable(std::bind(&FastAerialTrainer::RenderCanvas, this, std::placeholders::_1));
 
@@ -98,8 +82,6 @@ void FastAerialTrainer::onLoad()
 
 void FastAerialTrainer::OnTick()
 {
-	if (!ac) return;
-
 	CarWrapper car = gameWrapper->GetLocalCar();
 	if (!car)
 		return;
@@ -155,8 +137,6 @@ void FastAerialTrainer::OnTick()
 
 void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
-	if (!ac) return;
-
 	CarWrapper car = gameWrapper->GetLocalCar();
 	if (!car)
 		return;
@@ -164,7 +144,7 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 
 	ControllerInput inputs = car.GetInput();
 
-	canvas.SetColor(255, 255, 255, 255);
+	/*canvas.SetColor(255, 255, 255, 255);
 	canvas.DrawString("HasFlip : " + std::to_string(car.HasFlip()));
 	canvas.SetPosition(Vector2{ 10, 15 });
 	canvas.DrawString("GetbDoubleJumped : " + std::to_string(car.GetbDoubleJumped()));
@@ -177,7 +157,7 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	canvas.SetPosition(Vector2{ 10, 75 });
 	canvas.DrawString("Jump : " + std::to_string(inputs.Jump));
 	canvas.SetPosition(Vector2{ 10, 90 });
-	canvas.DrawString("Jumped : " + std::to_string(inputs.Jumped));
+	canvas.DrawString("Jumped : " + std::to_string(inputs.Jumped));*/
 
 
 
@@ -185,18 +165,18 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	//canvas.DrawString("holdFirstJumpStartTime : " + std::to_string(holdFirstJumpStartTime));
 	//canvas.SetPosition(Vector2{ 10, 125 });
 	//canvas.DrawString("holdFirstJumpStopTime : " + std::to_string(holdFirstJumpStopTime));
-	canvas.SetPosition(Vector2{ 10, 140 });
-	canvas.DrawString("holdFirstJumpDuration : " + std::to_string(holdFirstJumpDuration));
-	//canvas.SetPosition(Vector2{ 10, 155 });
-	//canvas.DrawString("DoubleJumpPressedTime : " + std::to_string(DoubleJumpPressedTime));
-	canvas.SetPosition(Vector2{ 10, 170 });
-	canvas.DrawString("TimeBetweenFirstAndDoubleJump : " + std::to_string(TimeBetweenFirstAndDoubleJump));
-	canvas.SetPosition(Vector2{ 10, 185 });
-	canvas.DrawString("totalJumpTime : " + std::to_string(totalJumpTime));
-	canvas.SetPosition(Vector2{ 10, 200 });
-	canvas.DrawString("HoldingJoystickBackDuration : " + std::to_string(HoldingJoystickBackDuration));
-	canvas.SetPosition(Vector2{ 10, 215 });
-	canvas.DrawString("JoystickBackDurations size : " + std::to_string(JoystickBackDurations.size()));
+	//canvas.SetPosition(Vector2{ 10, 140 });
+	//canvas.DrawString("holdFirstJumpDuration : " + std::to_string(holdFirstJumpDuration));
+	////canvas.SetPosition(Vector2{ 10, 155 });
+	////canvas.DrawString("DoubleJumpPressedTime : " + std::to_string(DoubleJumpPressedTime));
+	//canvas.SetPosition(Vector2{ 10, 170 });
+	//canvas.DrawString("TimeBetweenFirstAndDoubleJump : " + std::to_string(TimeBetweenFirstAndDoubleJump));
+	//canvas.SetPosition(Vector2{ 10, 185 });
+	//canvas.DrawString("totalJumpTime : " + std::to_string(totalJumpTime));
+	//canvas.SetPosition(Vector2{ 10, 200 });
+	//canvas.DrawString("HoldingJoystickBackDuration : " + std::to_string(HoldingJoystickBackDuration));
+	//canvas.SetPosition(Vector2{ 10, 215 });
+	//canvas.DrawString("JoystickBackDurations size : " + std::to_string(JoystickBackDurations.size()));
 
 	Vector2 pos = Vector2{ 10, 230 };
 	for (int n = 0; n < JoystickBackDurations.size(); n++)
@@ -225,8 +205,6 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 
 void FastAerialTrainer::DrawBar(CanvasWrapper canvas, std::string text, int& value, Vector2 barPos, int sizeX, int sizeY, int backgroudBarOpacity, int valueBarOpacity, int highestValue, std::vector<Range>& rangeList)
 {
-	if (!ac) return;
-
 	canvas.SetPosition(barPos);
 	canvas.SetColor(255, 255, 255, backgroudBarOpacity);
 	canvas.FillBox(Vector2{ sizeX, sizeY });
