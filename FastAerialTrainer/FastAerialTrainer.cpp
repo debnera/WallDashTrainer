@@ -171,14 +171,14 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	//canvas.SetPosition(Vector2{ 10, 215 });
 	//canvas.DrawString("JoystickBackDurations size : " + std::to_string(JoystickBackDurations.size()));
 
-	Vector2 pos = Vector2{ 10, 230 };
+	/*Vector2 pos = Vector2{ 10, 230 };
 	for (int n = 0; n < JoystickBackDurations.size(); n++)
 	{
 		auto rec = JoystickBackDurations[n];
 		int aaa = n * 15;
 		canvas.SetPosition(Vector2{ 10, pos.Y + aaa });
 		canvas.DrawString(std::to_string(n) + " : " + std::to_string(rec.GetDuration()));
-	}
+	}*/
 
 
 	//holdFirstJumpDuration background bar
