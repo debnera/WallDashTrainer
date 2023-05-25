@@ -28,8 +28,9 @@ struct Rec
 {
 	std::chrono::steady_clock::time_point startTime;
 	std::chrono::steady_clock::time_point stopTime;
+	bool stopTime_HasValue = false;
 	int GetDuration() {
-		if (stopTime == std::chrono::steady_clock::time_point())
+		if (!stopTime_HasValue)
 		{
 			return 0;
 		}
@@ -59,14 +60,14 @@ class FastAerialTrainer: public BakkesMod::Plugin::BakkesModPlugin, public Bakke
 	int JumpDuration_Bar_Height = 30;
 	int JumpDuration_BackgroudBar_Opacity = 150;
 	int JumpDuration_ValueBar_Opacity = 210;
-	int JumpDuration_HighestValue = 260;
+	int JumpDuration_HighestValue = 300;
 	//std::vector<int> JumpDuration_RangeList = { 140, 180, 220, 260 };
 	std::vector<Range> JumpDuration_RangeList = 
 	{ 
-		Range(Vector2{0, 140}, 255, 0, 0), //red
-		Range(Vector2{141, 180}, 255, 255, 0), //yellow
-		Range(Vector2{181, 220}, 0, 255, 0), //green
-		Range(Vector2{221, 260}, 255, 255, 0) //yellow
+		Range(Vector2{0, 180}, 255, 0, 0), //red
+		Range(Vector2{181, 195}, 255, 255, 0), //yellow
+		Range(Vector2{196, 225}, 0, 255, 0), //green
+		Range(Vector2{226, 260}, 255, 255, 0) //yellow
 	};
 
 

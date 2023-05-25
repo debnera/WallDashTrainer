@@ -13,16 +13,10 @@ void FastAerialTrainer::onLoad()
 
 	gameWrapper->RegisterDrawable(std::bind(&FastAerialTrainer::RenderCanvas, this, std::placeholders::_1));
 
-	/*cvarManager->registerNotifier("my_aweseome_notifier", [&](std::vector<std::string> args) {
-		cvarManager->log("Hello notifier!");
-	}, "", 0);*/
-
 
 	gameWrapper->HookEvent("Function TAGame.Car_TA.SetVehicleInput", std::bind(&FastAerialTrainer::OnTick, this));
 
-	//Function CarComponent_Jump_TA.Active.BeginState //when car uses first jump
-	//Function CarComponent_DoubleJump_TA.Active.BeginState //when car uses double jump
-
+	//when car uses first jump
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_Jump_TA.Active.BeginState",
 		[this](CarWrapper caller, void* params, std::string eventname) {
 			
@@ -58,6 +52,7 @@ void FastAerialTrainer::onLoad()
 
 		});
 
+	//when car uses double jump
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_DoubleJump_TA.Active.BeginState",
 		[this](CarWrapper caller, void* params, std::string eventname) {
 
@@ -66,8 +61,11 @@ void FastAerialTrainer::onLoad()
 
 
 			checkHoldingJoystickBack = false;
-			if (JoystickBackDurations.back().stopTime == std::chrono::steady_clock::time_point()) //if stop time doesn't have a value
+			if (!JoystickBackDurations.back().stopTime_HasValue) //if stop time doesn't have a value
+			{
 				JoystickBackDurations.back().stopTime = DoubleJumpPressedTime;
+				JoystickBackDurations.back().stopTime_HasValue = true;
+			}
 
 			HoldingJoystickBackDuration = 0;
 			for (Rec rec : JoystickBackDurations)
@@ -102,19 +100,13 @@ void FastAerialTrainer::OnTick()
 		{
 			if (!wasHoldingJoystickBack)
 			{
-				/*if (JoystickBackDurations.back().stopTime != std::chrono::steady_clock::time_point())
-				{
-					Rec rec;
-					rec.startTime = std::chrono::steady_clock::now();
-					JoystickBackDurations.push_back(rec);
-				}*/
 				if (JoystickBackDurations.size() == 0)
 				{
 					Rec rec;
 					rec.startTime = std::chrono::steady_clock::now();
 					JoystickBackDurations.push_back(rec);
 				}
-				else if (JoystickBackDurations.back().stopTime != std::chrono::steady_clock::time_point())
+				else if (JoystickBackDurations.back().stopTime_HasValue)
 				{
 					Rec rec;
 					rec.startTime = std::chrono::steady_clock::now();
@@ -129,6 +121,7 @@ void FastAerialTrainer::OnTick()
 			{
 				wasHoldingJoystickBack = false;
 				JoystickBackDurations.back().stopTime = std::chrono::steady_clock::now();
+				JoystickBackDurations.back().stopTime_HasValue = true;
 			}
 		}
 	}
