@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "FastAerialTrainer.h"
 #include "bakkesmod/wrappers/Engine/WorldInfoWrapper.h"
+#include <sstream>
 
 
 BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINTYPE_FREEPLAY)
@@ -109,22 +110,39 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 	}
 }
 
-void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
-{
-	DrawBar(canvas, "Hold First Jump in ms: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
-		JumpDuration_Bar_Pos, Vector2{ JumpDuration_Bar_Length, JumpDuration_Bar_Height },
-		JumpDuration_BackgroudBar_Opacity, JumpDuration_RangeList);
-
-	DrawBar(canvas, "Time to Double Jump in ms: ", TimeBetweenFirstAndDoubleJump * 1000, DoubleJumpDuration_HighestValue,
-		DoubleJumpDuration_Bar_Pos, Vector2{ DoubleJumpDuration_Bar_Length, DoubleJumpDuration_Bar_Height },
-		DoubleJumpDuration_BackgroudBar_Opacity, DoubleJumpDuration_RangeList);
-
-	canvas.SetPosition(Vector2{ 570, 185 });
-	float JoystickBackDurationPercentage = !totalJumpTime ? 0.f : 100.f * HoldingJoystickBackDuration / totalJumpTime;
-	canvas.DrawString("Tilt between jumps: " + std::to_string(JoystickBackDurationPercentage) + "%", 2.5f, 2.5f);
+static std::string toPrecision(float x, int precision) {
+	std::stringstream stream;
+	stream << std::fixed << std::setprecision(precision) << x;
+	return stream.str();
 }
 
-void FastAerialTrainer::DrawBar(CanvasWrapper canvas, std::string text, float value, float maxValue, Vector2 barPos, Vector2 barSize, int backgroudBarOpacity, std::vector<Range>& colorRanges)
+void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
+{
+	if (gameWrapper->IsPaused())
+		return;
+
+	DrawBar(
+		canvas, "Hold First Jump in ms: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
+		GuiPosition, BarSize(),
+		GuiBackgroundOpacity, JumpDuration_RangeList
+	);
+
+	DrawBar(
+		canvas, "Time to Double Jump in ms: ", TimeBetweenFirstAndDoubleJump * 1000, DoubleJumpDuration_HighestValue,
+		GuiPosition + Offset(), BarSize(),
+		GuiBackgroundOpacity, DoubleJumpDuration_RangeList
+	);
+
+	canvas.SetPosition(GuiPosition + (Offset() * 2));
+	float JoystickBackDurationPercentage = !totalJumpTime ? 0.f : 100.f * HoldingJoystickBackDuration / totalJumpTime;
+	canvas.DrawString("Tilt Between Jumps: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
+}
+
+void FastAerialTrainer::DrawBar(
+	CanvasWrapper canvas, std::string text, float value, float maxValue,
+	Vector2 barPos, Vector2 barSize,
+	int backgroudBarOpacity, std::vector<Range>& colorRanges
+)
 {
 	// Draw background
 	canvas.SetPosition(barPos);
@@ -133,36 +151,34 @@ void FastAerialTrainer::DrawBar(CanvasWrapper canvas, std::string text, float va
 
 	// Draw colored bar
 	canvas.SetPosition(barPos);
-	canvas.SetColor(colorRanges.front().color);
 	for (Range& range : colorRanges)
 	{
-		if (range.range.X <= value && value <= range.range.Y)
+		if (range.min <= value && value <= range.max)
 		{
-			canvas.SetColor(range.color);
+			canvas.SetColor(*range.color);
 		}
 	}
 	float result = std::min(1.f, value / maxValue);
-	int barLength = barSize.X * result;
-	canvas.FillBox(Vector2{ barLength, barSize.Y });
+	canvas.FillBox(Vector2{ (int)(barSize.X * result), barSize.Y });
 
 	// Draw border
 	canvas.SetColor(255, 255, 255, 255);
 	canvas.SetPosition(barPos);
 	canvas.DrawBox(barSize);
-
 	for (Range& range : colorRanges)
 	{
 		canvas.SetColor(255, 255, 255, 255);
-		float result = float(range.range.Y) / float(maxValue);
-		int barLength = barSize.X * result;
-		canvas.SetPosition(Vector2{ barPos.X + barLength, barPos.Y });
-		canvas.FillBox(Vector2{ 2, barSize.Y });
+		float result = range.max / maxValue;
+		if (result < 1.f) {
+			canvas.SetPosition(barPos + Vector2{ (int)(result * barSize.X), 0 });
+			canvas.FillBox(Vector2{ 2, barSize.Y });
+		}
 	}
 
 	// Draw text
 	canvas.SetColor(255, 255, 255, 255);
-	canvas.SetPosition(Vector2{ barPos.X, barPos.Y + 31 });
-	canvas.DrawString(text + std::to_string(value), 2.5f, 2.5f);
+	canvas.SetPosition(barPos + Vector2{ 0, barSize.Y });
+	canvas.DrawString(text + std::to_string(value), FontSize(), FontSize());
 }
 
 void FastAerialTrainer::onUnload()
