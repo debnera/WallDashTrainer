@@ -109,6 +109,8 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
 	if (gameWrapper->IsPaused())
 		return;
+	if (!gameWrapper->IsInFreeplay() && !gameWrapper->IsInCustomTraining())
+		return;
 
 	DrawBar(
 		canvas, "Hold First Jump in ms: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
@@ -192,7 +194,7 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 	canvas.SetPosition(offset - boxPadding);
 	canvas.DrawBox(Vector2{ GuiSize, GuiSize / 10 } + 2 * boxPadding);
 
-	canvas.SetColor(255, 255, 255, 255);
+	canvas.SetColor(GuiPitchHistoryColor);
 	int i = 0;
 	int size = pitchHistory.size();
 	float prevPitch;
@@ -202,8 +204,10 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 		{
 			Vector2F start = { (float)(i - 1) / size * GuiSize, (1 - prevPitch) * GuiSize / 10 };
 			Vector2F end = { (float)i / size * GuiSize, (1 - currentPitch) * GuiSize / 10 };
-			float width = GuiSize / 500.f;
-			canvas.DrawLine(start + offset, end + offset, width);
+			Vector2F base = start.Y > end.Y ? Vector2F{ end.X, start.Y } : Vector2F{ start.X, end.Y };
+			canvas.FillTriangle(base + offset, start + offset, end + offset, GuiPitchHistoryColor);
+			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + offset);
+			canvas.FillBox(Vector2F{ end.X - start.X, GuiSize / 10 - std::max(start.Y, end.Y) });
 		}
 		prevPitch = currentPitch;
 		i++;

@@ -62,6 +62,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 		Range{ 110, INT_MAX, &GuiColorFailure }
 	};
 	int DoubleJumpDuration_HighestValue = 130;
+	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
 	bool GuiDrawPitchHistory = true;
 
 
