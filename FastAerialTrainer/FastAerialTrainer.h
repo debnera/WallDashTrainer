@@ -11,7 +11,7 @@ struct Range
 {
 	int min;
 	int max;
-	LinearColor *color;
+	LinearColor* color;
 };
 
 class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow
@@ -40,13 +40,14 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	Vector2 BarSize() { return { GuiSize, GuiSize / 30 }; }
 	Vector2 Offset() { return { 0, GuiSize / 10 }; }
 	float FontSize() { return GuiSize / 300.f; }
-	int GuiBackgroundOpacity = 150;
+	float GuiColorPreviewOpacity = 0.2;
+	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 150);
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
 	LinearColor GuiColorFailure = LinearColor(255, 0, 0, 210);
 	std::vector<Range> JumpDuration_RangeList =
 	{
-		Range{ INT_MIN, 180, &GuiColorFailure },
+		Range{ 0, 180, &GuiColorFailure },
 		Range{ 180, 195, &GuiColorWarning },
 		Range{ 195, 225, &GuiColorSuccess },
 		Range{ 225, 260, &GuiColorWarning },
@@ -55,7 +56,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	int JumpDuration_HighestValue = 300;
 	std::vector<Range> DoubleJumpDuration_RangeList =
 	{
-		Range{ INT_MIN, 50, &GuiColorFailure },
+		Range{ 0, 50, &GuiColorFailure },
 		Range{ 50, 70, &GuiColorWarning },
 		Range{ 70, 90, &GuiColorSuccess },
 		Range{ 90, 110, &GuiColorWarning },
@@ -69,7 +70,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	float GetCurrentTime();
 	void OnTick(CarWrapper car);
 
-	void DrawBar(CanvasWrapper canvas, std::string text, float value, float maxValue, Vector2 barPos, Vector2 barSize, int backgroudBarOpacity, std::vector<Range>& colorRanges);
+	void DrawBar(CanvasWrapper canvas, std::string text, float value, float maxValue, Vector2 barPos, Vector2 barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
 	void RenderCanvas(CanvasWrapper canvas);
 
 	virtual void onLoad();

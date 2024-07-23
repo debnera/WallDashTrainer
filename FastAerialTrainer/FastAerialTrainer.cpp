@@ -71,13 +71,9 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 	float now = GetCurrentTime();
 
 	if (HoldingFirstJump)
-	{
 		holdFirstJumpDuration = now - holdFirstJumpStartTime;
-	}
 	else
-	{
 		holdFirstJumpDuration = holdFirstJumpStopTime - holdFirstJumpStartTime;
-	}
 
 	ControllerInput inputs = car.GetInput();
 	if (checkHoldingJoystickBack)
@@ -104,13 +100,13 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	DrawBar(
 		canvas, "Hold First Jump in ms: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
 		GuiPosition, BarSize(),
-		GuiBackgroundOpacity, JumpDuration_RangeList
+		GuiColorBackground, JumpDuration_RangeList
 	);
 
 	DrawBar(
 		canvas, "Time to Double Jump in ms: ", TimeBetweenFirstAndDoubleJump * 1000, DoubleJumpDuration_HighestValue,
 		GuiPosition + Offset(), BarSize(),
-		GuiBackgroundOpacity, DoubleJumpDuration_RangeList
+		GuiColorBackground, DoubleJumpDuration_RangeList
 	);
 
 	canvas.SetPosition(GuiPosition + (Offset() * 2));
@@ -121,13 +117,23 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 void FastAerialTrainer::DrawBar(
 	CanvasWrapper canvas, std::string text, float value, float maxValue,
 	Vector2 barPos, Vector2 barSize,
-	int backgroudBarOpacity, std::vector<Range>& colorRanges
+	LinearColor backgroundColor, std::vector<Range>& colorRanges
 )
 {
 	// Draw background
 	canvas.SetPosition(barPos);
-	canvas.SetColor(255, 255, 255, backgroudBarOpacity);
+	canvas.SetColor(backgroundColor);
 	canvas.FillBox(barSize);
+	for (Range& range : colorRanges)
+	{
+		LinearColor preview = *range.color;
+		preview.A *= GuiColorPreviewOpacity;
+		canvas.SetColor(preview);
+		float left = std::min(range.min / maxValue, 1.f);
+		float width = std::min((range.max - range.min) / maxValue, 1.f - left);
+		canvas.SetPosition(barPos + Vector2{ (int)(left * barSize.X), 0 });
+		canvas.FillBox(Vector2{ (int)(width * barSize.X), barSize.Y });
+	}
 
 	// Draw colored bar
 	canvas.SetPosition(barPos);
