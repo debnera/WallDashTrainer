@@ -36,7 +36,7 @@ void FastAerialTrainer::onLoad()
 			totalJumpTime = 0;
 			HoldingJoystickBackDuration = 0;
 			checkHoldingJoystickBack = true;
-			pitchHistory.clear();
+			inputHistory.clear();
 			lastTickTime = now;
 		});
 
@@ -95,7 +95,7 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 		HoldingJoystickBackDuration += intensity * duration;
 		lastTickTime = now;
 
-		pitchHistory.push_back(intensity);
+		inputHistory.push_back({ intensity, (bool)inputs.HoldingBoost });
 	}
 }
 
@@ -194,22 +194,27 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 	canvas.SetPosition(offset - boxPadding);
 	canvas.DrawBox(Vector2{ GuiSize, GuiSize / 10 } + 2 * boxPadding);
 
-	canvas.SetColor(GuiPitchHistoryColor);
 	int i = 0;
-	int size = pitchHistory.size();
-	float prevPitch;
-	for (float currentPitch : pitchHistory)
+	int size = inputHistory.size();
+	InputHistory prevInput;
+	for (InputHistory currentInput : inputHistory)
 	{
-		if (i > 0 && currentPitch >= 0 && prevPitch >= 0)
+		if (i > 0 && currentInput.pitch >= 0 && prevInput.pitch >= 0)
 		{
-			Vector2F start = { (float)(i - 1) / size * GuiSize, (1 - prevPitch) * GuiSize / 10 };
-			Vector2F end = { (float)i / size * GuiSize, (1 - currentPitch) * GuiSize / 10 };
+			Vector2F start = { (float)(i - 1) / size * GuiSize, (1 - prevInput.pitch) * GuiSize / 10 };
+			Vector2F end = { (float)i / size * GuiSize, (1 - currentInput.pitch) * GuiSize / 10 };
 			Vector2F base = start.Y > end.Y ? Vector2F{ end.X, start.Y } : Vector2F{ start.X, end.Y };
-			canvas.FillTriangle(base + offset, start + offset, end + offset, GuiPitchHistoryColor);
+			canvas.SetColor(currentInput.boost ? GuiPitchHistoryColorBoost : GuiPitchHistoryColor);
+			canvas.FillTriangle(base + offset, start + offset, end + offset);
 			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + offset);
 			canvas.FillBox(Vector2F{ end.X - start.X, GuiSize / 10 - std::max(start.Y, end.Y) });
 		}
-		prevPitch = currentPitch;
+		if (i % 12 == 0) {
+			canvas.SetColor(200, 200, 200, 200);
+			float x = (float)i / size * GuiSize;
+			canvas.DrawLine(Vector2F{ x, 0 } + offset, Vector2F{ x, GuiSize / 10.f } + offset, GuiSize / 300.f);
+		}
+		prevInput = currentInput;
 		i++;
 	}
 }

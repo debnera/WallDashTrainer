@@ -44,5 +44,6 @@ void FastAerialTrainer::RenderSettings()
 	ImGui::DragInt("First Jump Hold - Highest Value", &JumpDuration_HighestValue, 1.f, 1, INT_MAX);
 	ImGui::DragInt("Time to Double Jump - Highest Value", &DoubleJumpDuration_HighestValue, 1.f, 1, INT_MAX);
 	ImGui::Checkbox("Draw Pitch History", &GuiDrawPitchHistory);
-	ColorPickerWithoutAlpha("Pitch History Color", &GuiPitchHistoryColor);
+	ColorPickerWithoutAlpha("Pitch History Color - Boosting", &GuiPitchHistoryColorBoost);
+	ColorPickerWithoutAlpha("Pitch History Color - No Boost", &GuiPitchHistoryColor);
 }

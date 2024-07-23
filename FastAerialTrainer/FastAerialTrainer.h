@@ -14,6 +14,12 @@ struct Range
 	LinearColor* color;
 };
 
+struct InputHistory
+{
+	float pitch;
+	bool boost;
+};
+
 class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow
 {
 	// Measuring
@@ -29,7 +35,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	bool checkHoldingJoystickBack = false;
 	float lastTickTime;
 	float HoldingJoystickBackDuration;
-	std::vector<float> pitchHistory;
+	std::vector<InputHistory> inputHistory;
 
 	float totalJumpTime;
 
@@ -63,6 +69,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	};
 	int DoubleJumpDuration_HighestValue = 130;
 	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
+	LinearColor GuiPitchHistoryColorBoost = LinearColor(240, 80, 80, 255);
 	bool GuiDrawPitchHistory = true;
 
 
