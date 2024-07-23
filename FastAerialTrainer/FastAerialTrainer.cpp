@@ -42,12 +42,10 @@ void FastAerialTrainer::onLoad()
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function TAGame.Car_TA.OnJumpReleased",
 		[this](CarWrapper car, void* params, std::string eventname)
 		{
-			float now = GetCurrentTime();
-
 			if (HoldingFirstJump)
 			{
 				HoldingFirstJump = false;
-				holdFirstJumpStopTime = now;
+				holdFirstJumpStopTime = GetCurrentTime();
 			}
 		});
 
@@ -55,14 +53,13 @@ void FastAerialTrainer::onLoad()
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_DoubleJump_TA.Active.BeginState",
 		[this](CarWrapper caller, void* params, std::string eventname)
 		{
-			float now = GetCurrentTime();
-
-			DoubleJumpPressedTime = now;
-			TimeBetweenFirstAndDoubleJump = DoubleJumpPressedTime - holdFirstJumpStopTime;
+			// Only register the double jump if we didn't loose our flip or landed in between.
+			if (checkHoldingJoystickBack) {
+				DoubleJumpPressedTime = GetCurrentTime();
+				totalJumpTime = DoubleJumpPressedTime - holdFirstJumpStartTime;
+			}
 
 			checkHoldingJoystickBack = false;
-
-			totalJumpTime = DoubleJumpPressedTime - holdFirstJumpStartTime;
 		});
 }
 
@@ -74,6 +71,19 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 		holdFirstJumpDuration = now - holdFirstJumpStartTime;
 	else
 		holdFirstJumpDuration = holdFirstJumpStopTime - holdFirstJumpStartTime;
+
+	if (HoldingFirstJump)
+		TimeBetweenFirstAndDoubleJump = 0;
+	else if (DoubleJumpPressedTime > holdFirstJumpStopTime)
+		TimeBetweenFirstAndDoubleJump = DoubleJumpPressedTime - holdFirstJumpStopTime;
+	else if (checkHoldingJoystickBack)
+		TimeBetweenFirstAndDoubleJump = now - holdFirstJumpStopTime;
+	else
+		TimeBetweenFirstAndDoubleJump = 0;
+
+	// We either landed or have to land for another double jump. No need to record things further.
+	if (!car.HasFlip() || (car.IsOnGround() && !car.GetbJumped()))
+		checkHoldingJoystickBack = false;
 
 	ControllerInput inputs = car.GetInput();
 	if (checkHoldingJoystickBack)
