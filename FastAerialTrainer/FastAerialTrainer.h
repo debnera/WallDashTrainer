@@ -56,10 +56,8 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	int JumpDuration_HighestValue = 300;
 	std::vector<Range> DoubleJumpDuration_RangeList =
 	{
-		Range{ 0, 50, &GuiColorFailure },
-		Range{ 50, 70, &GuiColorWarning },
-		Range{ 70, 90, &GuiColorSuccess },
-		Range{ 90, 110, &GuiColorWarning },
+		Range{ 0, 75, &GuiColorSuccess },
+		Range{ 75, 110, &GuiColorWarning },
 		Range{ 110, INT_MAX, &GuiColorFailure }
 	};
 	int DoubleJumpDuration_HighestValue = 130;
