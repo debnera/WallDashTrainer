@@ -1,117 +1,100 @@
 #include "pch.h"
 #include "FastAerialTrainer.h"
+#include "bakkesmod/wrappers/Engine/WorldInfoWrapper.h"
 
 
 BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
+float FastAerialTrainer::GetCurrentTime() {
+	ServerWrapper server = gameWrapper->GetCurrentGameState();
+	if (!server) return 0;
+	WorldInfoWrapper world = server.GetWorldInfo();
+	if (!world) return 0;
+	return world.GetTimeSeconds();
+}
+
 void FastAerialTrainer::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
-
 	gameWrapper->RegisterDrawable(std::bind(&FastAerialTrainer::RenderCanvas, this, std::placeholders::_1));
 
-
-	gameWrapper->HookEvent("Function TAGame.Car_TA.SetVehicleInput", std::bind(&FastAerialTrainer::OnTick, this));
+	gameWrapper->HookEventWithCaller<CarWrapper>("Function TAGame.Car_TA.SetVehicleInput", std::bind(&FastAerialTrainer::OnTick, this, std::placeholders::_1));
 
 	//when car uses first jump
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_Jump_TA.Active.BeginState",
-		[this](CarWrapper caller, void* params, std::string eventname) {
-			
+		[this](CarWrapper car, void* params, std::string eventname) {
 
-			holdFirstJumpStartTime = std::chrono::steady_clock::now();
+			float now = GetCurrentTime();
+
+			holdFirstJumpStartTime = now;
 			HoldingFirstJump = true;
 
-			JoystickBackDurations.clear();
+			HoldingJoystickBackDuration = 0;
 			checkHoldingJoystickBack = true;
 			wasHoldingJoystickBack = false;
 
-			CarWrapper car = gameWrapper->GetLocalCar();
-			if (!car)
-				return;
 			ControllerInput inputs = car.GetInput();
 			if (inputs.Pitch > holdJoystickBackThreshold)
 			{
-				Rec rec;
-				rec.startTime = holdFirstJumpStartTime;
-				JoystickBackDurations.push_back(rec);
+				holdJoystickBackStartTime = holdFirstJumpStartTime;
 			}
-
 		});
 
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function TAGame.Car_TA.OnJumpReleased",
-		[this](CarWrapper caller, void* params, std::string eventname) {
+		[this](CarWrapper car, void* params, std::string eventname) {
+
+			float now = GetCurrentTime();
 
 			if (HoldingFirstJump)
 			{
 				HoldingFirstJump = false;
-				holdFirstJumpStopTime = std::chrono::steady_clock::now();
+				holdFirstJumpStopTime = now;
 			}
-
 		});
 
 	//when car uses double jump
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_DoubleJump_TA.Active.BeginState",
 		[this](CarWrapper caller, void* params, std::string eventname) {
 
-			DoubleJumpPressedTime = std::chrono::steady_clock::now();
-			TimeBetweenFirstAndDoubleJump = std::chrono::duration_cast<std::chrono::milliseconds>(DoubleJumpPressedTime - holdFirstJumpStopTime).count();
+			float now = GetCurrentTime();
 
+			DoubleJumpPressedTime = now;
+			TimeBetweenFirstAndDoubleJump = DoubleJumpPressedTime - holdFirstJumpStopTime;
 
 			checkHoldingJoystickBack = false;
-			if (!JoystickBackDurations.back().stopTime_HasValue) //if stop time doesn't have a value
+			if (wasHoldingJoystickBack)
 			{
-				JoystickBackDurations.back().stopTime = DoubleJumpPressedTime;
-				JoystickBackDurations.back().stopTime_HasValue = true;
+				HoldingJoystickBackDuration += now - holdJoystickBackStartTime;
 			}
 
-			HoldingJoystickBackDuration = 0;
-			for (Rec rec : JoystickBackDurations)
-			{
-				HoldingJoystickBackDuration += rec.GetDuration();
-			}
-
-
-			totalJumpTime = std::chrono::duration_cast<std::chrono::milliseconds>(DoubleJumpPressedTime - holdFirstJumpStartTime).count();
+			totalJumpTime = DoubleJumpPressedTime - holdFirstJumpStartTime;
 		});
 }
 
-void FastAerialTrainer::OnTick()
+void FastAerialTrainer::OnTick(CarWrapper car)
 {
-	CarWrapper car = gameWrapper->GetLocalCar();
-	if (!car)
-		return;
+	float now = GetCurrentTime();
 
 	if (HoldingFirstJump)
 	{
-		holdFirstJumpDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - holdFirstJumpStartTime).count();
+		holdFirstJumpDuration = now - holdFirstJumpStartTime;
 	}
 	else
 	{
-		holdFirstJumpDuration = std::chrono::duration_cast<std::chrono::milliseconds>(holdFirstJumpStopTime - holdFirstJumpStartTime).count();
+		holdFirstJumpDuration = holdFirstJumpStopTime - holdFirstJumpStartTime;
 	}
 
 	ControllerInput inputs = car.GetInput();
 	if (checkHoldingJoystickBack)
 	{
-		if (inputs.Pitch > holdJoystickBackThreshold)
+		if (inputs.Pitch >= holdJoystickBackThreshold)
 		{
 			if (!wasHoldingJoystickBack)
 			{
-				if (JoystickBackDurations.size() == 0)
-				{
-					Rec rec;
-					rec.startTime = std::chrono::steady_clock::now();
-					JoystickBackDurations.push_back(rec);
-				}
-				else if (JoystickBackDurations.back().stopTime_HasValue)
-				{
-					Rec rec;
-					rec.startTime = std::chrono::steady_clock::now();
-					JoystickBackDurations.push_back(rec);
-				}
+				holdJoystickBackStartTime = now;
 				wasHoldingJoystickBack = true;
 			}
 		}
@@ -120,126 +103,66 @@ void FastAerialTrainer::OnTick()
 			if (wasHoldingJoystickBack)
 			{
 				wasHoldingJoystickBack = false;
-				JoystickBackDurations.back().stopTime = std::chrono::steady_clock::now();
-				JoystickBackDurations.back().stopTime_HasValue = true;
+				HoldingJoystickBackDuration += now - holdJoystickBackStartTime;
 			}
 		}
 	}
-
 }
 
 void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
-	CarWrapper car = gameWrapper->GetLocalCar();
-	if (!car)
-		return;
+	DrawBar(canvas, "Hold First Jump in ms: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
+		JumpDuration_Bar_Pos, Vector2{ JumpDuration_Bar_Length, JumpDuration_Bar_Height },
+		JumpDuration_BackgroudBar_Opacity, JumpDuration_RangeList);
 
-
-	ControllerInput inputs = car.GetInput();
-
-	/*canvas.SetColor(255, 255, 255, 255);
-	canvas.DrawString("HasFlip : " + std::to_string(car.HasFlip()));
-	canvas.SetPosition(Vector2{ 10, 15 });
-	canvas.DrawString("GetbDoubleJumped : " + std::to_string(car.GetbDoubleJumped()));
-	canvas.SetPosition(Vector2{ 10, 30 });
-	canvas.DrawString("GetbJumped : " + std::to_string(car.GetbJumped()));
-	canvas.SetPosition(Vector2{ 10, 45 });
-	canvas.DrawString("GetbCanJump : " + std::to_string(car.GetbCanJump()));
-	canvas.SetPosition(Vector2{ 10, 60 });
-	canvas.DrawString("Handbrake : " + std::to_string(inputs.Handbrake));
-	canvas.SetPosition(Vector2{ 10, 75 });
-	canvas.DrawString("Jump : " + std::to_string(inputs.Jump));
-	canvas.SetPosition(Vector2{ 10, 90 });
-	canvas.DrawString("Jumped : " + std::to_string(inputs.Jumped));*/
-
-
-
-	//canvas.SetPosition(Vector2{ 10, 110 });
-	//canvas.DrawString("holdFirstJumpStartTime : " + std::to_string(holdFirstJumpStartTime));
-	//canvas.SetPosition(Vector2{ 10, 125 });
-	//canvas.DrawString("holdFirstJumpStopTime : " + std::to_string(holdFirstJumpStopTime));
-	//canvas.SetPosition(Vector2{ 10, 140 });
-	//canvas.DrawString("holdFirstJumpDuration : " + std::to_string(holdFirstJumpDuration));
-	////canvas.SetPosition(Vector2{ 10, 155 });
-	////canvas.DrawString("DoubleJumpPressedTime : " + std::to_string(DoubleJumpPressedTime));
-	//canvas.SetPosition(Vector2{ 10, 170 });
-	//canvas.DrawString("TimeBetweenFirstAndDoubleJump : " + std::to_string(TimeBetweenFirstAndDoubleJump));
-	//canvas.SetPosition(Vector2{ 10, 185 });
-	//canvas.DrawString("totalJumpTime : " + std::to_string(totalJumpTime));
-	//canvas.SetPosition(Vector2{ 10, 200 });
-	//canvas.DrawString("HoldingJoystickBackDuration : " + std::to_string(HoldingJoystickBackDuration));
-	//canvas.SetPosition(Vector2{ 10, 215 });
-	//canvas.DrawString("JoystickBackDurations size : " + std::to_string(JoystickBackDurations.size()));
-
-	/*Vector2 pos = Vector2{ 10, 230 };
-	for (int n = 0; n < JoystickBackDurations.size(); n++)
-	{
-		auto rec = JoystickBackDurations[n];
-		int aaa = n * 15;
-		canvas.SetPosition(Vector2{ 10, pos.Y + aaa });
-		canvas.DrawString(std::to_string(n) + " : " + std::to_string(rec.GetDuration()));
-	}*/
-
-
-	//holdFirstJumpDuration background bar
-	DrawBar(canvas, "holdFirstJumpDuration (ms) : ", holdFirstJumpDuration, JumpDuration_Bar_Pos, JumpDuration_Bar_Length,
-		JumpDuration_Bar_Height, JumpDuration_BackgroudBar_Opacity, JumpDuration_ValueBar_Opacity, JumpDuration_HighestValue, JumpDuration_RangeList);
-
-
-	//TimeBetweenFirstAndDoubleJump background bar
-	DrawBar(canvas, "TimeBetweenFirstAndDoubleJump (ms) : ", TimeBetweenFirstAndDoubleJump, DoubleJumpDuration_Bar_Pos, DoubleJumpDuration_Bar_Length,
-		DoubleJumpDuration_Bar_Height, DoubleJumpDuration_BackgroudBar_Opacity, DoubleJumpDuration_ValueBar_Opacity, DoubleJumpDuration_HighestValue, DoubleJumpDuration_RangeList);
-
+	DrawBar(canvas, "Time to Double Jump in ms: ", TimeBetweenFirstAndDoubleJump * 1000, DoubleJumpDuration_HighestValue,
+		DoubleJumpDuration_Bar_Pos, Vector2{ DoubleJumpDuration_Bar_Length, DoubleJumpDuration_Bar_Height },
+		DoubleJumpDuration_BackgroudBar_Opacity, DoubleJumpDuration_RangeList);
 
 	canvas.SetPosition(Vector2{ 570, 185 });
-	float JoystickBack_DurationPercentage = (float(HoldingJoystickBackDuration) / float(totalJumpTime)) * 100.f;
-	canvas.DrawString("JoystickBack_DurationPercentage : " + std::to_string(JoystickBack_DurationPercentage) + "%", 2.5f, 2.5f);
+	float JoystickBackDurationPercentage = !totalJumpTime ? 0.f : 100.f * HoldingJoystickBackDuration / totalJumpTime;
+	canvas.DrawString("Tilt between jumps: " + std::to_string(JoystickBackDurationPercentage) + "%", 2.5f, 2.5f);
 }
 
-void FastAerialTrainer::DrawBar(CanvasWrapper canvas, std::string text, int& value, Vector2 barPos, int sizeX, int sizeY, int backgroudBarOpacity, int valueBarOpacity, int highestValue, std::vector<Range>& rangeList)
+void FastAerialTrainer::DrawBar(CanvasWrapper canvas, std::string text, float value, float maxValue, Vector2 barPos, Vector2 barSize, int backgroudBarOpacity, std::vector<Range>& colorRanges)
 {
+	// Draw background
 	canvas.SetPosition(barPos);
 	canvas.SetColor(255, 255, 255, backgroudBarOpacity);
-	canvas.FillBox(Vector2{ sizeX, sizeY });
-	if (holdFirstJumpDuration != 0)
+	canvas.FillBox(barSize);
+
+	// Draw colored bar
+	canvas.SetPosition(barPos);
+	canvas.SetColor(colorRanges.front().color);
+	for (Range& range : colorRanges)
 	{
-		canvas.SetPosition(barPos);
-
-		canvas.SetColor(255, 0, 0, valueBarOpacity);
-
-		for (Range range : rangeList)
+		if (range.range.X <= value && value <= range.range.Y)
 		{
-			if (value >= range.range.X && value <= range.range.Y)
-			{
-				canvas.SetColor(range.red, range.green, range.blue, valueBarOpacity);
-			}
+			canvas.SetColor(range.color);
 		}
+	}
+	float result = std::min(1.f, value / maxValue);
+	int barLength = barSize.X * result;
+	canvas.FillBox(Vector2{ barLength, barSize.Y });
 
-		float result = float(value) / float(highestValue);
-		if (value >= highestValue)
-			result = 1.f;
-		//LOG("{}", result);
-		int barLength = sizeX * result;
-		canvas.FillBox(Vector2{ barLength, sizeY });
+	// Draw border
+	canvas.SetColor(255, 255, 255, 255);
+	canvas.SetPosition(barPos);
+	canvas.DrawBox(barSize);
+
+	for (Range& range : colorRanges)
+	{
+		canvas.SetColor(255, 255, 255, 255);
+		float result = float(range.range.Y) / float(maxValue);
+		int barLength = barSize.X * result;
+		canvas.SetPosition(Vector2{ barPos.X + barLength, barPos.Y });
+		canvas.FillBox(Vector2{ 2, barSize.Y });
 	}
 
-
+	// Draw text
 	canvas.SetColor(255, 255, 255, 255);
 	canvas.SetPosition(Vector2{ barPos.X, barPos.Y + 31 });
 	canvas.DrawString(text + std::to_string(value), 2.5f, 2.5f);
-
-	canvas.SetColor(255, 255, 255, 255);
-	canvas.SetPosition(barPos);
-	canvas.DrawBox(Vector2{ sizeX, sizeY });
-
-	for (Range range : rangeList)
-	{
-		canvas.SetColor(255, 255, 255, 255);
-		float result2 = float(range.range.Y) / float(highestValue);
-		int barLength2 = sizeX * result2;
-		canvas.SetPosition(Vector2{ barPos.X + barLength2, barPos.Y });
-		canvas.FillBox(Vector2{ 2, sizeY });
-	}
 }
 
 void FastAerialTrainer::onUnload()
