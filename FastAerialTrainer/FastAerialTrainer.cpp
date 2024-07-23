@@ -20,13 +20,26 @@ void FastAerialTrainer::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
-	gameWrapper->RegisterDrawable(std::bind(&FastAerialTrainer::RenderCanvas, this, std::placeholders::_1));
+	gameWrapper->RegisterDrawable(
+		[this](CanvasWrapper canvas) 
+		{
+			FastAerialTrainer::RenderCanvas(canvas);
+		}
+	);
 
-	gameWrapper->HookEventWithCaller<CarWrapper>("Function TAGame.Car_TA.SetVehicleInput", std::bind(&FastAerialTrainer::OnTick, this, std::placeholders::_1));
+	gameWrapper->HookEventWithCaller<CarWrapper>(
+		"Function TAGame.Car_TA.SetVehicleInput", 
+		[this](CarWrapper car, void* params, std::string eventName)
+		{
+			ControllerInput* input = (ControllerInput*) params;
+			FastAerialTrainer::OnTick(car, *input);
+		}
+	);
 
-	//when car uses first jump
-	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_Jump_TA.Active.BeginState",
-		[this](CarWrapper car, void* params, std::string eventname)
+	// Initial jump start
+	gameWrapper->HookEvent(
+		"Function CarComponent_Jump_TA.Active.BeginState",
+		[this](std::string eventname)
 		{
 			float now = GetCurrentTime();
 
@@ -38,21 +51,26 @@ void FastAerialTrainer::onLoad()
 			checkHoldingJoystickBack = true;
 			inputHistory.clear();
 			lastTickTime = now;
-		});
+		}
+	);
 
-	gameWrapper->HookEventWithCaller<CarWrapper>("Function TAGame.Car_TA.OnJumpReleased",
-		[this](CarWrapper car, void* params, std::string eventname)
+	// Jump released
+	gameWrapper->HookEvent(
+		"Function TAGame.Car_TA.OnJumpReleased",
+		[this](std::string eventname)
 		{
 			if (HoldingFirstJump)
 			{
 				HoldingFirstJump = false;
 				holdFirstJumpStopTime = GetCurrentTime();
 			}
-		});
+		}
+	);
 
-	//when car uses double jump
-	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_DoubleJump_TA.Active.BeginState",
-		[this](CarWrapper caller, void* params, std::string eventname)
+	// Double jump
+	gameWrapper->HookEvent(
+		"Function CarComponent_DoubleJump_TA.Active.BeginState",
+		[this](std::string eventname)
 		{
 			// Only register the double jump if we didn't loose our flip or landed in between.
 			if (checkHoldingJoystickBack) {
@@ -61,10 +79,11 @@ void FastAerialTrainer::onLoad()
 			}
 
 			checkHoldingJoystickBack = false;
-		});
+		}
+	);
 }
 
-void FastAerialTrainer::OnTick(CarWrapper car)
+void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput input)
 {
 	float now = GetCurrentTime();
 
@@ -86,16 +105,15 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 	if (!car.HasFlip() || (car.IsOnGround() && !car.GetbJumped()))
 		checkHoldingJoystickBack = false;
 
-	ControllerInput inputs = car.GetInput();
 	if (checkHoldingJoystickBack)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
-		float intensity = std::min(1.f, sensitivity * inputs.Pitch);
+		float intensity = std::min(1.f, sensitivity * input.Pitch);
 		float duration = now - lastTickTime;
 		HoldingJoystickBackDuration += intensity * duration;
 		lastTickTime = now;
 
-		inputHistory.push_back({ intensity, (bool)inputs.HoldingBoost });
+		inputHistory.push_back({ intensity, (bool)input.HoldingBoost });
 	}
 }
 
