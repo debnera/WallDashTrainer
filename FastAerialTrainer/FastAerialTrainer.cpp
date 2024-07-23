@@ -4,7 +4,7 @@
 #include <sstream>
 
 
-BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINTYPE_FREEPLAY);
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -31,8 +31,7 @@ void FastAerialTrainer::onLoad()
 		"Function TAGame.Car_TA.SetVehicleInput", 
 		[this](CarWrapper car, void* params, std::string eventName)
 		{
-			ControllerInput* input = (ControllerInput*) params;
-			FastAerialTrainer::OnTick(car, *input);
+			FastAerialTrainer::OnTick(car);
 		}
 	);
 
@@ -83,7 +82,7 @@ void FastAerialTrainer::onLoad()
 	);
 }
 
-void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput input)
+void FastAerialTrainer::OnTick(CarWrapper car)
 {
 	float now = GetCurrentTime();
 
@@ -105,6 +104,7 @@ void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput input)
 	if (!car.HasFlip() || (car.IsOnGround() && !car.GetbJumped()))
 		checkHoldingJoystickBack = false;
 
+	ControllerInput input = car.GetInput();
 	if (checkHoldingJoystickBack)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;

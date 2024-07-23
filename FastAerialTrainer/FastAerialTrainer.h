@@ -76,7 +76,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	// Methods
 
 	float GetCurrentTime();
-	void OnTick(CarWrapper car, ControllerInput input);
+	void OnTick(CarWrapper car);
 
 	void RenderCanvas(CanvasWrapper canvas);
 	void DrawBar(CanvasWrapper& canvas, std::string text, float value, float maxValue, Vector2 barPos, Vector2 barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
