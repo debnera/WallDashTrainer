@@ -36,6 +36,7 @@ void FastAerialTrainer::onLoad()
 			totalJumpTime = 0;
 			HoldingJoystickBackDuration = 0;
 			checkHoldingJoystickBack = true;
+			pitchHistory.clear();
 			lastTickTime = now;
 		});
 
@@ -93,6 +94,8 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 		float duration = now - lastTickTime;
 		HoldingJoystickBackDuration += intensity * duration;
 		lastTickTime = now;
+
+		pitchHistory.push_back(intensity);
 	}
 }
 
@@ -119,13 +122,17 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 		GuiColorBackground, DoubleJumpDuration_RangeList
 	);
 
+	canvas.SetColor(255, 255, 255, 255);
 	canvas.SetPosition(GuiPosition + (Offset() * 2));
 	float JoystickBackDurationPercentage = !totalJumpTime ? 0.f : 100.f * HoldingJoystickBackDuration / totalJumpTime;
 	canvas.DrawString("Tilt Between Jumps: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
+
+	if (GuiDrawPitchHistory)
+		DrawPitchHistory(canvas);
 }
 
 void FastAerialTrainer::DrawBar(
-	CanvasWrapper canvas, std::string text, float value, float maxValue,
+	CanvasWrapper& canvas, std::string text, float value, float maxValue,
 	Vector2 barPos, Vector2 barSize,
 	LinearColor backgroundColor, std::vector<Range>& colorRanges
 )
@@ -175,6 +182,32 @@ void FastAerialTrainer::DrawBar(
 	canvas.SetColor(255, 255, 255, 255);
 	canvas.SetPosition(barPos + Vector2{ 0, barSize.Y });
 	canvas.DrawString(text + std::to_string(value), FontSize(), FontSize());
+}
+
+void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
+{
+	Vector2F offset = (Vector2F() + Offset()) * 2.6f + GuiPosition;
+	canvas.SetColor(255, 255, 255, 127);
+	float boxPadding = GuiSize / 200.f;
+	canvas.SetPosition(offset - boxPadding);
+	canvas.DrawBox(Vector2{ GuiSize, GuiSize / 10 } + 2 * boxPadding);
+
+	canvas.SetColor(255, 255, 255, 255);
+	int i = 0;
+	int size = pitchHistory.size();
+	float prevPitch;
+	for (float currentPitch : pitchHistory)
+	{
+		if (i > 0 && currentPitch >= 0 && prevPitch >= 0)
+		{
+			Vector2F start = { (float)(i - 1) / size * GuiSize, (1 - prevPitch) * GuiSize / 10 };
+			Vector2F end = { (float)i / size * GuiSize, (1 - currentPitch) * GuiSize / 10 };
+			float width = GuiSize / 500.f;
+			canvas.DrawLine(start + offset, end + offset, width);
+		}
+		prevPitch = currentPitch;
+		i++;
+	}
 }
 
 void FastAerialTrainer::onUnload()

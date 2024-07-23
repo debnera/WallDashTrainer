@@ -29,6 +29,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	bool checkHoldingJoystickBack = false;
 	float lastTickTime;
 	float HoldingJoystickBackDuration;
+	std::vector<float> pitchHistory;
 
 	float totalJumpTime;
 
@@ -37,9 +38,9 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 
 	Vector2 GuiPosition = { 570, 12 };
 	int GuiSize = 825;
-	Vector2 BarSize() { return { GuiSize, GuiSize / 30 }; }
+	Vector2 BarSize() { return { GuiSize, GuiSize / 24 }; }
 	Vector2 Offset() { return { 0, GuiSize / 10 }; }
-	float FontSize() { return GuiSize / 300.f; }
+	float FontSize() { return GuiSize / 350.f; }
 	float GuiColorPreviewOpacity = 0.2;
 	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 150);
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
@@ -61,6 +62,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 		Range{ 110, INT_MAX, &GuiColorFailure }
 	};
 	int DoubleJumpDuration_HighestValue = 130;
+	bool GuiDrawPitchHistory = true;
 
 
 	// Methods
@@ -68,8 +70,9 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	float GetCurrentTime();
 	void OnTick(CarWrapper car);
 
-	void DrawBar(CanvasWrapper canvas, std::string text, float value, float maxValue, Vector2 barPos, Vector2 barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
 	void RenderCanvas(CanvasWrapper canvas);
+	void DrawBar(CanvasWrapper& canvas, std::string text, float value, float maxValue, Vector2 barPos, Vector2 barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
+	void DrawPitchHistory(CanvasWrapper& canvas);
 
 	virtual void onLoad();
 	virtual void onUnload();

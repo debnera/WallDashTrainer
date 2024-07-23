@@ -37,4 +37,5 @@ void FastAerialTrainer::RenderSettings()
 	ColorPicker("Failure Color", &GuiColorFailure);
 	ImGui::DragInt("First Jump Hold - Highest Value", &JumpDuration_HighestValue, 1.f, 1, INT_MAX);
 	ImGui::DragInt("Time to Double Jump - Highest Value", &DoubleJumpDuration_HighestValue, 1.f, 1, INT_MAX);
+	ImGui::Checkbox("Draw Pitch History", &GuiDrawPitchHistory);
 }
