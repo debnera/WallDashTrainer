@@ -27,9 +27,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	float TimeBetweenFirstAndDoubleJump;
 
 	bool checkHoldingJoystickBack = false;
-	bool wasHoldingJoystickBack = false;
-	float holdJoystickBackThreshold = 0.1; // TODO: Check how much leaning back was done.
-	float holdJoystickBackStartTime;
+	float lastTickTime;
 	float HoldingJoystickBackDuration;
 
 	float totalJumpTime;
@@ -49,19 +47,19 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	std::vector<Range> JumpDuration_RangeList =
 	{
 		Range{ INT_MIN, 180, &GuiColorFailure },
-		Range{ 181, 195, &GuiColorWarning },
-		Range{ 196, 225, &GuiColorSuccess },
-		Range{ 226, 260, &GuiColorWarning },
-		Range{ 261, INT_MAX, &GuiColorFailure }
+		Range{ 180, 195, &GuiColorWarning },
+		Range{ 195, 225, &GuiColorSuccess },
+		Range{ 225, 260, &GuiColorWarning },
+		Range{ 260, INT_MAX, &GuiColorFailure }
 	};
 	int JumpDuration_HighestValue = 300;
 	std::vector<Range> DoubleJumpDuration_RangeList =
 	{
 		Range{ INT_MIN, 50, &GuiColorFailure },
-		Range{ 51, 70, &GuiColorWarning },
-		Range{ 71, 90, &GuiColorSuccess },
-		Range{ 91, 110, &GuiColorWarning },
-		Range{ 111, INT_MAX, &GuiColorFailure }
+		Range{ 50, 70, &GuiColorWarning },
+		Range{ 70, 90, &GuiColorSuccess },
+		Range{ 90, 110, &GuiColorWarning },
+		Range{ 110, INT_MAX, &GuiColorFailure }
 	};
 	int DoubleJumpDuration_HighestValue = 130;
 

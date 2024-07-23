@@ -26,27 +26,22 @@ void FastAerialTrainer::onLoad()
 
 	//when car uses first jump
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_Jump_TA.Active.BeginState",
-		[this](CarWrapper car, void* params, std::string eventname) {
-
+		[this](CarWrapper car, void* params, std::string eventname)
+		{
 			float now = GetCurrentTime();
 
 			holdFirstJumpStartTime = now;
 			HoldingFirstJump = true;
 
+			totalJumpTime = 0;
 			HoldingJoystickBackDuration = 0;
 			checkHoldingJoystickBack = true;
-			wasHoldingJoystickBack = false;
-
-			ControllerInput inputs = car.GetInput();
-			if (inputs.Pitch > holdJoystickBackThreshold)
-			{
-				holdJoystickBackStartTime = holdFirstJumpStartTime;
-			}
+			lastTickTime = now;
 		});
 
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function TAGame.Car_TA.OnJumpReleased",
-		[this](CarWrapper car, void* params, std::string eventname) {
-
+		[this](CarWrapper car, void* params, std::string eventname)
+		{
 			float now = GetCurrentTime();
 
 			if (HoldingFirstJump)
@@ -58,18 +53,14 @@ void FastAerialTrainer::onLoad()
 
 	//when car uses double jump
 	gameWrapper->HookEventWithCaller<CarWrapper>("Function CarComponent_DoubleJump_TA.Active.BeginState",
-		[this](CarWrapper caller, void* params, std::string eventname) {
-
+		[this](CarWrapper caller, void* params, std::string eventname)
+		{
 			float now = GetCurrentTime();
 
 			DoubleJumpPressedTime = now;
 			TimeBetweenFirstAndDoubleJump = DoubleJumpPressedTime - holdFirstJumpStopTime;
 
 			checkHoldingJoystickBack = false;
-			if (wasHoldingJoystickBack)
-			{
-				HoldingJoystickBackDuration += now - holdJoystickBackStartTime;
-			}
 
 			totalJumpTime = DoubleJumpPressedTime - holdFirstJumpStartTime;
 		});
@@ -91,22 +82,11 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 	ControllerInput inputs = car.GetInput();
 	if (checkHoldingJoystickBack)
 	{
-		if (inputs.Pitch >= holdJoystickBackThreshold)
-		{
-			if (!wasHoldingJoystickBack)
-			{
-				holdJoystickBackStartTime = now;
-				wasHoldingJoystickBack = true;
-			}
-		}
-		else
-		{
-			if (wasHoldingJoystickBack)
-			{
-				wasHoldingJoystickBack = false;
-				HoldingJoystickBackDuration += now - holdJoystickBackStartTime;
-			}
-		}
+		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
+		float intensity = std::min(1.f, sensitivity * inputs.Pitch);
+		float duration = now - lastTickTime;
+		HoldingJoystickBackDuration += intensity * duration;
+		lastTickTime = now;
 	}
 }
 
