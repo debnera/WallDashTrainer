@@ -113,13 +113,13 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 		return;
 
 	DrawBar(
-		canvas, "Hold First Jump in ms: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
+		canvas, "Hold First Jump: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
 		GuiPosition, BarSize(),
 		GuiColorBackground, JumpDuration_RangeList
 	);
 
 	DrawBar(
-		canvas, "Time to Double Jump in ms: ", TimeBetweenFirstAndDoubleJump * 1000, DoubleJumpDuration_HighestValue,
+		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000, DoubleJumpDuration_HighestValue,
 		GuiPosition + Offset(), BarSize(),
 		GuiColorBackground, DoubleJumpDuration_RangeList
 	);
@@ -183,7 +183,7 @@ void FastAerialTrainer::DrawBar(
 	// Draw text
 	canvas.SetColor(255, 255, 255, 255);
 	canvas.SetPosition(barPos + Vector2{ 0, barSize.Y });
-	canvas.DrawString(text + std::to_string(value), FontSize(), FontSize());
+	canvas.DrawString(text + toPrecision(value, 1) + " ms", FontSize(), FontSize());
 }
 
 void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
@@ -205,7 +205,7 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 			Vector2F end = { (float)i / size * GuiSize, (1 - currentInput.pitch) * GuiSize / 10 };
 			Vector2F base = start.Y > end.Y ? Vector2F{ end.X, start.Y } : Vector2F{ start.X, end.Y };
 			canvas.SetColor(currentInput.boost ? GuiPitchHistoryColorBoost : GuiPitchHistoryColor);
-			canvas.FillTriangle(base + offset, start + offset, end + offset);
+			canvas.FillTriangle(base + offset, start + offset, end + offset); // `FillTriangle` ignores transparency.
 			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + offset);
 			canvas.FillBox(Vector2F{ end.X - start.X, GuiSize / 10 - std::max(start.Y, end.Y) });
 		}
