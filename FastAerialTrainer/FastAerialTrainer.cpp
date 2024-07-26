@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "FastAerialTrainer.h"
 #include "bakkesmod/wrappers/Engine/WorldInfoWrapper.h"
+
 #include <sstream>
 
 
@@ -26,26 +27,29 @@ static std::string to_string(LinearColor col) {
 
 void FastAerialTrainer::onLoad()
 {
+	// This line is required for `LOG` to work and must be before any use of `LOG()`.
 	_globalCvarManager = cvarManager;
+
+	persistentStorage = std::make_shared<PersistentStorage>(this, "fast_aerial_trainer", true, true);
 
 	auto registerIntCvar = [this](std::string label, int& value)
 		{
-			cvarManager->registerCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getIntValue(); });
 		};
 	auto registerFloatCvar = [this](std::string label, float& value)
 		{
-			cvarManager->registerCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getFloatValue(); });
 		};
 	auto registerBoolCvar = [this](std::string label, bool& value)
 		{
-			cvarManager->registerCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getBoolValue(); });
 		};
 	auto registerColorCvar = [this](std::string label, LinearColor& value)
 		{
-			cvarManager->registerCvar(label, to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, to_string(value), "", false)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getColorValue(); });
 		};
 

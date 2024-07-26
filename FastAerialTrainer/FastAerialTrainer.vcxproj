@@ -110,6 +110,7 @@
     </ClCompile>
     <ClCompile Include="FastAerialTrainer.cpp" />
     <ClCompile Include="FastAerialTrainerGUI.cpp" />
+    <ClCompile Include="PersistentStorage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GuiBase.h" />
@@ -130,6 +131,7 @@
     <ClInclude Include="logging.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="FastAerialTrainer.h" />
+    <ClInclude Include="PersistentStorage.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
