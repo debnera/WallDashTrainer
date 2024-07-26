@@ -1,14 +1,6 @@
 #include "pch.h"
 #include "FastAerialTrainer.h"
 
-std::string FastAerialTrainer::GetPluginName() {
-	return "FastAerialTrainer";
-}
-
-void FastAerialTrainer::SetImGuiContext(uintptr_t ctx) {
-	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
-}
-
 static bool ColorPicker(const char* label, LinearColor& color) {
 	LinearColor col = color / 255;
 	bool retVal = ImGui::ColorEdit4(label, &col.R, ImGuiColorEditFlags_AlphaBar);

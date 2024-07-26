@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GuiBase.h"
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
@@ -35,7 +36,7 @@ struct InputHistory
 	bool boost;
 };
 
-class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow
+class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
 {
 	bool PluginEnabled = true;
 
@@ -105,6 +106,4 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Bakk
 	virtual void onUnload();
 
 	void RenderSettings() override;
-	std::string GetPluginName() override;
-	void SetImGuiContext(uintptr_t ctx) override;
 };

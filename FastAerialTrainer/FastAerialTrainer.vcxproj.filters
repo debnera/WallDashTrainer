@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -66,6 +66,12 @@
     <ClCompile Include="FastAerialTrainerGUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="IMGUI\imgui_stdlib.cpp">
+      <Filter>imgui\implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="GuiBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FastAerialTrainer.h">
@@ -114,6 +120,15 @@
       <Filter>imgui\headers</Filter>
     </ClInclude>
     <ClInclude Include="version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IMGUI\imgui_stdlib.h">
+      <Filter>imgui\headers</Filter>
+    </ClInclude>
+    <ClInclude Include="GuiBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
