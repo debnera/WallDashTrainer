@@ -187,18 +187,18 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 		return;
 
 	DrawBar(
-		canvas, "Hold First Jump: ", holdFirstJumpDuration * 1000, JumpDuration_HighestValue,
+		canvas, "Hold First Jump: ", holdFirstJumpDuration * 1000, (float)JumpDuration_HighestValue,
 		GuiPosition, BarSize(),
 		GuiColorBackground, JumpDuration_RangeList
 	);
 
 	DrawBar(
-		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000, DoubleJumpDuration_HighestValue,
+		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000, (float)DoubleJumpDuration_HighestValue,
 		GuiPosition + Offset(), BarSize(),
 		GuiColorBackground, DoubleJumpDuration_RangeList
 	);
 
-	canvas.SetColor(255, 255, 255, 255);
+	canvas.SetColor(LinearColor(255, 255, 255, 255));
 	canvas.SetPosition(GuiPosition + (Offset() * 2));
 	float JoystickBackDurationPercentage = !totalJumpTime ? 0.f : 100.f * HoldingJoystickBackDuration / totalJumpTime;
 	canvas.DrawString("Tilt Between Jumps: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
@@ -241,12 +241,12 @@ void FastAerialTrainer::DrawBar(
 	canvas.FillBox(Vector2{ (int)(barSize.X * result), barSize.Y });
 
 	// Draw border
-	canvas.SetColor(255, 255, 255, 255);
+	canvas.SetColor(LinearColor(255, 255, 255, 255));
 	canvas.SetPosition(barPos);
 	canvas.DrawBox(barSize);
 	for (Range& range : colorRanges)
 	{
-		canvas.SetColor(255, 255, 255, 255);
+		canvas.SetColor(LinearColor(255, 255, 255, 255));
 		float result = range.max / maxValue;
 		if (result < 1.f) {
 			canvas.SetPosition(barPos + Vector2{ (int)(result * barSize.X), 0 });
@@ -255,7 +255,7 @@ void FastAerialTrainer::DrawBar(
 	}
 
 	// Draw text
-	canvas.SetColor(255, 255, 255, 255);
+	canvas.SetColor(LinearColor(255, 255, 255, 255));
 	canvas.SetPosition(barPos + Vector2{ 0, barSize.Y });
 	canvas.DrawString(text + toPrecision(value, 1) + " ms", FontSize(), FontSize());
 }
@@ -263,15 +263,15 @@ void FastAerialTrainer::DrawBar(
 void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 {
 	Vector2F offset = (Vector2F() + Offset()) * 2.6f + GuiPosition;
-	canvas.SetColor(255, 255, 255, 127);
+	canvas.SetColor(LinearColor(255, 255, 255, 127));
 	float boxPadding = GuiSize / 200.f;
 	canvas.SetPosition(offset - boxPadding);
-	canvas.DrawBox(Vector2{ GuiSize, GuiSize / 10 } + 2 * boxPadding);
+	canvas.DrawBox(Vector2{ GuiSize, GuiSize / 10 } + (int)(2 * boxPadding));
 
 	int i = 0;
-	int size = inputHistory.size();
-	InputHistory prevInput;
-	for (InputHistory currentInput : inputHistory)
+	int size = (int)inputHistory.size();
+	InputHistoryItem prevInput{};
+	for (InputHistoryItem currentInput : inputHistory)
 	{
 		if (i > 0 && currentInput.pitch >= 0 && prevInput.pitch >= 0)
 		{
@@ -284,7 +284,7 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 			canvas.FillBox(Vector2F{ end.X - start.X, GuiSize / 10 - std::max(start.Y, end.Y) });
 		}
 		if (i % 12 == 0) {
-			canvas.SetColor(200, 200, 200, 200);
+			canvas.SetColor(LinearColor(200, 200, 200, 200));
 			float x = (float)i / size * GuiSize;
 			canvas.DrawLine(Vector2F{ x, 0 } + offset, Vector2F{ x, GuiSize / 10.f } + offset, GuiSize / 300.f);
 		}

@@ -31,7 +31,7 @@ struct Range
 	LinearColor* color;
 };
 
-struct InputHistory
+struct InputHistoryItem
 {
 	float pitch;
 	bool boost;
@@ -46,19 +46,19 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	// Measuring
 
 	bool HoldingFirstJump = false;
-	float holdFirstJumpStartTime;
-	float holdFirstJumpStopTime;
-	float holdFirstJumpDuration;
+	float holdFirstJumpStartTime = 0.f;
+	float holdFirstJumpStopTime = 0.f;
+	float holdFirstJumpDuration = 0.f;
 
-	float DoubleJumpPressedTime;
-	float TimeBetweenFirstAndDoubleJump;
+	float DoubleJumpPressedTime = 0.f;
+	float TimeBetweenFirstAndDoubleJump = 0.f;
 
 	bool checkHoldingJoystickBack = false;
-	float lastTickTime;
-	float HoldingJoystickBackDuration;
-	std::vector<InputHistory> inputHistory;
+	float lastTickTime = 0.f;
+	float HoldingJoystickBackDuration = 0.f;
+	std::vector<InputHistoryItem> inputHistory;
 
-	float totalJumpTime;
+	float totalJumpTime = 0.f;
 
 
 	// Styling
@@ -68,7 +68,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	Vector2 BarSize() { return { GuiSize, GuiSize / 24 }; }
 	Vector2 Offset() { return { 0, GuiSize / 10 }; }
 	float FontSize() { return GuiSize / 350.f; }
-	float GuiColorPreviewOpacity = 0.2;
+	float GuiColorPreviewOpacity = 0.2f;
 	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 150);
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
