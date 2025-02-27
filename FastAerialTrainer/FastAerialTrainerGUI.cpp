@@ -33,10 +33,10 @@ void FastAerialTrainer::RenderSettings()
 		ImGui::SetTooltip("Sets how long after the double jump the input recording should stop.");
 
 	if (PercentageSlider("GUI Position X", GuiPositionRelative.X))
-		cvarManager->getCvar(GUI_POSITION_X).setValue(GuiPositionRelative.X);
+		cvarManager->getCvar(GUI_POSITION_RELATIVE_X).setValue(GuiPositionRelative.X);
 
 	if (PercentageSlider("GUI Position Y", GuiPositionRelative.Y))
-		cvarManager->getCvar(GUI_POSITION_Y).setValue(GuiPositionRelative.Y);
+		cvarManager->getCvar(GUI_POSITION_RELATIVE_Y).setValue(GuiPositionRelative.Y);
 
 	if (ImGui::SliderFloat("GUI Size", &GuiSize, 0, ScreenSize.X, "%.0f"))
 		cvarManager->getCvar(GUI_SIZE).setValue(GuiSize);

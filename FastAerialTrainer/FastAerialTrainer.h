@@ -11,8 +11,8 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 constexpr auto PLUGIN_ENABLED = "fast_aerial_trainer_enabled";
 constexpr auto RECORD_AFTER_DOUBLE_JUMP = "fast_aerial_trainer_record_after_double_jump";
-constexpr auto GUI_POSITION_X = "fast_aerial_trainer_gui_pos_x";
-constexpr auto GUI_POSITION_Y = "fast_aerial_trainer_gui_pos_y";
+constexpr auto GUI_POSITION_RELATIVE_X = "fast_aerial_trainer_gui_pos_rel_x";
+constexpr auto GUI_POSITION_RELATIVE_Y = "fast_aerial_trainer_gui_pos_rel_y";
 constexpr auto GUI_SIZE = "fast_aerial_trainer_gui_size";
 constexpr auto GUI_BORDER_COLOR = "fast_aerial_trainer_gui_border_color";
 constexpr auto GUI_BACKGROUND_COLOR = "fast_aerial_trainer_gui_background_color";

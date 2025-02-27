@@ -62,8 +62,8 @@ void FastAerialTrainer::onLoad()
 
 	registerBoolCvar(PLUGIN_ENABLED, PluginEnabled);
 	registerFloatCvar(RECORD_AFTER_DOUBLE_JUMP, RecordingAfterDoubleJump);
-	registerPercentCvar(GUI_POSITION_X, GuiPositionRelative.X);
-	registerPercentCvar(GUI_POSITION_Y, GuiPositionRelative.Y);
+	registerPercentCvar(GUI_POSITION_RELATIVE_X, GuiPositionRelative.X);
+	registerPercentCvar(GUI_POSITION_RELATIVE_Y, GuiPositionRelative.Y);
 	registerFloatCvar(GUI_SIZE, GuiSize);
 	registerIntCvar(GUI_JUMP_MAX, JumpDuration_HighestValue);
 	registerIntCvar(GUI_DOUBLE_JUMP_MAX, DoubleJumpDuration_HighestValue);
