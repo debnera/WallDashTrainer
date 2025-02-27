@@ -32,7 +32,7 @@ This graph shows your pitch input and when you pressed boost.\
 The horizontal axis represents time starting from the initial jump.\
 The vertical axis shows your pitch up input between 0 and 1 (scaled with input sensitivity).\
 The color indicates if you pressed boost or not.\
-The vertial line shows when you pressed jump.\
+The vertical line shows when you pressed jump.\
 This graph helps in improving your takeoff, because you can see where you missed crucial inputs.
 
 ## Improvements over the Original Plugin
