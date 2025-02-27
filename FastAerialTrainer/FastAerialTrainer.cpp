@@ -44,6 +44,11 @@ void FastAerialTrainer::onLoad()
 			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getFloatValue(); });
 		};
+	auto registerPercentCvar = [this](std::string label, float& value)
+		{
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false, true, 0.0f, true, 1.0f)
+				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getFloatValue(); });
+		};
 	auto registerBoolCvar = [this](std::string label, bool& value)
 		{
 			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
@@ -57,12 +62,12 @@ void FastAerialTrainer::onLoad()
 
 	registerBoolCvar(PLUGIN_ENABLED, PluginEnabled);
 	registerFloatCvar(RECORD_AFTER_DOUBLE_JUMP, RecordingAfterDoubleJump);
-	registerIntCvar(GUI_POSITION_X, GuiPosition.X);
-	registerIntCvar(GUI_POSITION_Y, GuiPosition.Y);
-	registerIntCvar(GUI_SIZE, GuiSize);
+	registerPercentCvar(GUI_POSITION_X, GuiPositionRelative.X);
+	registerPercentCvar(GUI_POSITION_Y, GuiPositionRelative.Y);
+	registerFloatCvar(GUI_SIZE, GuiSize);
 	registerIntCvar(GUI_JUMP_MAX, JumpDuration_HighestValue);
 	registerIntCvar(GUI_DOUBLE_JUMP_MAX, DoubleJumpDuration_HighestValue);
-	registerFloatCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
+	registerPercentCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
 	registerBoolCvar(GUI_DRAW_HISTORY, GuiDrawPitchHistory);
 	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
 	registerColorCvar(GUI_BACKGROUND_COLOR, GuiColorBackground);
@@ -221,20 +226,22 @@ static std::string toPrecision(float x, int precision)
 
 void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
+	ScreenSize = canvas.GetSize();
+
 	DrawBar(
 		canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000, (float)JumpDuration_HighestValue,
-		GuiPosition, BarSize(),
+		GuiPosition(), BarSize(),
 		GuiColorBackground, JumpDuration_RangeList
 	);
 
 	DrawBar(
 		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000, (float)DoubleJumpDuration_HighestValue,
-		GuiPosition + Offset(), BarSize(),
+		GuiPosition() + Offset(), BarSize(),
 		GuiColorBackground, DoubleJumpDuration_RangeList
 	);
 
 	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(GuiPosition + (Offset() * 2));
+	canvas.SetPosition(GuiPosition() + (Offset() * 2));
 	float JoystickBackDurationPercentage = !TotalRecordingDuration ? 0.f : 100.f * HoldingJoystickBackDuration / TotalRecordingDuration;
 	canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
 
@@ -244,7 +251,7 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 
 void FastAerialTrainer::DrawBar(
 	CanvasWrapper& canvas, std::string text, float value, float maxValue,
-	Vector2 barPos, Vector2 barSize,
+	Vector2F barPos, Vector2F barSize,
 	LinearColor backgroundColor, std::vector<Range>& colorRanges
 )
 {
@@ -259,8 +266,8 @@ void FastAerialTrainer::DrawBar(
 		canvas.SetColor(preview);
 		float left = std::min(range.min / maxValue, 1.f);
 		float width = std::min((range.max - range.min) / maxValue, 1.f - left);
-		canvas.SetPosition(barPos + Vector2{ (int)(left * barSize.X), 0 });
-		canvas.FillBox(Vector2{ (int)(width * barSize.X), barSize.Y });
+		canvas.SetPosition(barPos + Vector2F{ left * barSize.X, 0 });
+		canvas.FillBox(Vector2F{ width * barSize.X, barSize.Y });
 	}
 
 	// Draw colored bar
@@ -273,7 +280,7 @@ void FastAerialTrainer::DrawBar(
 		}
 	}
 	float result = std::min(1.f, value / maxValue);
-	canvas.FillBox(Vector2{ (int)(barSize.X * result), barSize.Y });
+	canvas.FillBox(Vector2F{ barSize.X * result, barSize.Y });
 
 	// Draw border
 	canvas.SetColor(GuiColorBorder);
@@ -286,23 +293,23 @@ void FastAerialTrainer::DrawBar(
 		if (result < 1.f)
 		{
 			canvas.SetPosition(barPos + Vector2{ (int)(result * barSize.X), 0 });
-			canvas.FillBox(Vector2{ 2, barSize.Y });
+			canvas.FillBox(Vector2F{ 2, barSize.Y });
 		}
 	}
 
 	// Draw text
 	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(barPos + Vector2{ 0, barSize.Y });
+	canvas.SetPosition(barPos + Vector2F{ 0, barSize.Y });
 	canvas.DrawString(text + toPrecision(value, 1) + " ms", FontSize(), FontSize());
 }
 
 void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 {
-	Vector2F offset = (Vector2F() + Offset()) * 2.6f + GuiPosition;
+	Vector2F offset = (Vector2F() + Offset()) * 2.6f + GuiPosition();
 	canvas.SetColor(GuiColorBorder);
 	float boxPadding = GuiSize / 200.f;
 	canvas.SetPosition(offset - boxPadding);
-	canvas.DrawBox(Vector2{ GuiSize, GuiSize / 10 } + (int)(2 * boxPadding));
+	canvas.DrawBox(Vector2F{ GuiSize, GuiSize / 10 } + (2 * boxPadding));
 
 	int i = 0;
 	int size = (int)InputHistory.size();

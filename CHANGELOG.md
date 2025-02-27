@@ -6,6 +6,7 @@
 - Remove 100 ms tick lines and add jump input line.
 - Disable recording in replay.
 - Add border and text color setting.
+- Draw UI relative to screen.
 - Improve resetting values and hooks.
 
 ## 2.2.0

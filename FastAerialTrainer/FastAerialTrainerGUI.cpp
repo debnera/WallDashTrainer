@@ -29,15 +29,19 @@ void FastAerialTrainer::RenderSettings()
 
 	if (ImGui::DragFloat("Record After Double Jump", &RecordingAfterDoubleJump, 0.005f, 0, FLT_MAX, "%.1f seconds"))
 		cvarManager->getCvar(RECORD_AFTER_DOUBLE_JUMP).setValue(RecordingAfterDoubleJump);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("Sets how long after the double jump the input recording should stop.");
 
-	if (ImGui::DragInt("GUI Position X", &GuiPosition.X))
-		cvarManager->getCvar(GUI_POSITION_X).setValue(GuiPosition.X);
+	if (PercentageSlider("GUI Position X", GuiPositionRelative.X))
+		cvarManager->getCvar(GUI_POSITION_X).setValue(GuiPositionRelative.X);
 
-	if (ImGui::DragInt("GUI Position Y", &GuiPosition.Y))
-		cvarManager->getCvar(GUI_POSITION_Y).setValue(GuiPosition.Y);
+	if (PercentageSlider("GUI Position Y", GuiPositionRelative.Y))
+		cvarManager->getCvar(GUI_POSITION_Y).setValue(GuiPositionRelative.Y);
 
-	if (ImGui::DragInt("GUI Size", &GuiSize))
+	if (ImGui::SliderFloat("GUI Size", &GuiSize, 0, ScreenSize.X, "%.0f"))
 		cvarManager->getCvar(GUI_SIZE).setValue(GuiSize);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("For clearest text use multiples of 350.");
 
 	if (ColorPicker("Border and Text Color", GuiColorBorder))
 		cvarManager->getCvar(GUI_BORDER_COLOR).setValue(GuiColorBorder);
