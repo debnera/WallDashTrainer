@@ -204,7 +204,10 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 
 	ControllerInput input = car.GetInput();
 
-	if (DoubleJumpPossible || DoubleJumpPressedTime + RecordingAfterDoubleJump >= now)
+	auto InAfterDoubleJumpRecording = DoubleJumpPressedTime <= now
+		&& now <= DoubleJumpPressedTime + RecordingAfterDoubleJump;
+
+	if (DoubleJumpPossible || InAfterDoubleJumpRecording)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
 		float intensity = std::min(1.f, sensitivity * input.Pitch);
