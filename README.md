@@ -48,3 +48,8 @@ This graph helps in improving your takeoff, because you can see where you missed
 
 Having an issue with the plugin? Found a bug? Missing a feature?\
 Open a new issue on GitHub and I'll look into it.
+
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md).
