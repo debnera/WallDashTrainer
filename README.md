@@ -21,16 +21,19 @@ The optimal value here is 200ms. See [RLBot - Jumping Physics](https://github.co
 How long it took you to press the jump button a second time after letting go of it.\
 Faster is better.
 
-### Tilt Between Jumps
+### Pitch Up Amount
 
-Measures how good your pitch back was between leaving the ground and double-jumping.\
-This takes into account aerial sensitivity.\
+Measures how good your pitch back input was. It takes into account aerial sensitivity.\
 Higher is better: 100% means you pitched upwards fully. 50% could mean you pitched back half for the whole duration or you pitched back fully for half the time.
 
 ### Pitch History
 
-This graph shows your pitch input and when you pressed boost between jumps.\
-This helps in improving your takeoff, because you can see where you missed crucial inputs.
+This graph shows your pitch input and when you pressed boost.\
+The horizontal axis represents time starting from the initial jump.\
+The vertical axis shows your pitch up input between 0 and 1 (scaled with input sensitivity).\
+The color indicates if you pressed boost or not.\
+The vertial line shows when you pressed jump.\
+This graph helps in improving your takeoff, because you can see where you missed crucial inputs.
 
 ## Improvements over the Original Plugin
 

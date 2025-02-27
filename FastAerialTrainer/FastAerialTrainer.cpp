@@ -9,7 +9,8 @@ BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINT
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
-float FastAerialTrainer::GetCurrentTime() {
+float FastAerialTrainer::GetCurrentTime()
+{
 	ServerWrapper server = gameWrapper->GetCurrentGameState();
 	if (!server) return 0;
 	WorldInfoWrapper world = server.GetWorldInfo();
@@ -17,7 +18,8 @@ float FastAerialTrainer::GetCurrentTime() {
 	return world.GetTimeSeconds();
 }
 
-static std::string to_string(LinearColor col) {
+static std::string to_string(LinearColor col)
+{
 	return "("
 		+ std::to_string((int)col.R) + ","
 		+ std::to_string((int)col.G) + ","
@@ -54,6 +56,7 @@ void FastAerialTrainer::onLoad()
 		};
 
 	registerBoolCvar(PLUGIN_ENABLED, PluginEnabled);
+	registerFloatCvar(RECORD_AFTER_DOUBLE_JUMP, RecordingAfterDoubleJump);
 	registerIntCvar(GUI_POSITION_X, GuiPosition.X);
 	registerIntCvar(GUI_POSITION_Y, GuiPosition.Y);
 	registerIntCvar(GUI_SIZE, GuiSize);
@@ -61,6 +64,7 @@ void FastAerialTrainer::onLoad()
 	registerIntCvar(GUI_DOUBLE_JUMP_MAX, DoubleJumpDuration_HighestValue);
 	registerFloatCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
 	registerBoolCvar(GUI_DRAW_HISTORY, GuiDrawPitchHistory);
+	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
 	registerColorCvar(GUI_BACKGROUND_COLOR, GuiColorBackground);
 	registerColorCvar(GUI_COLOR_SUCCESS, GuiColorSuccess);
 	registerColorCvar(GUI_COLOR_WARNING, GuiColorWarning);
@@ -72,6 +76,8 @@ void FastAerialTrainer::onLoad()
 	gameWrapper->RegisterDrawable(
 		[this](CanvasWrapper canvas)
 		{
+			if (!IsActive()) return;
+
 			FastAerialTrainer::RenderCanvas(canvas);
 		}
 	);
@@ -80,6 +86,8 @@ void FastAerialTrainer::onLoad()
 		"Function TAGame.Car_TA.SetVehicleInput",
 		[this](CarWrapper car, void* params, std::string eventName)
 		{
+			if (IsInReplay || !IsActive()) return;
+
 			FastAerialTrainer::OnTick(car);
 		}
 	);
@@ -89,16 +97,23 @@ void FastAerialTrainer::onLoad()
 		"Function CarComponent_Jump_TA.Active.BeginState",
 		[this](std::string eventname)
 		{
+			if (IsInReplay || !IsActive()) return;
+
 			float now = GetCurrentTime();
 
-			holdFirstJumpStartTime = now;
 			HoldingFirstJump = true;
+			HoldFirstJumpStartTime = now;
+			HoldFirstJumpStopTime = 0;
+			HoldFirstJumpDuration = 0;
 
-			totalJumpTime = 0;
+			DoubleJumpPossible = true;
+			DoubleJumpPressedTime = 0;
+			TimeBetweenFirstAndDoubleJump = 0;
+			TotalRecordingDuration = 0;
 			HoldingJoystickBackDuration = 0;
-			checkHoldingJoystickBack = true;
-			inputHistory.clear();
-			lastTickTime = now;
+
+			LastTickTime = now;
+			InputHistory.clear();
 		}
 	);
 
@@ -107,10 +122,12 @@ void FastAerialTrainer::onLoad()
 		"Function TAGame.Car_TA.OnJumpReleased",
 		[this](std::string eventname)
 		{
+			if (IsInReplay || !IsActive()) return;
+
 			if (HoldingFirstJump)
 			{
 				HoldingFirstJump = false;
-				holdFirstJumpStopTime = GetCurrentTime();
+				HoldFirstJumpStopTime = GetCurrentTime();
 			}
 		}
 	);
@@ -120,18 +137,39 @@ void FastAerialTrainer::onLoad()
 		"Function CarComponent_DoubleJump_TA.Active.BeginState",
 		[this](std::string eventname)
 		{
-			// Only register the double jump if we didn't loose our flip or landed in between.
-			if (checkHoldingJoystickBack) {
-				DoubleJumpPressedTime = GetCurrentTime();
-				totalJumpTime = DoubleJumpPressedTime - holdFirstJumpStartTime;
-			}
+			if (IsInReplay || !IsActive()) return;
 
-			checkHoldingJoystickBack = false;
+			// Only register the double jump if we didn't loose our flip or landed in between.
+			if (DoubleJumpPossible)
+				DoubleJumpPressedTime = GetCurrentTime();
+
+			DoubleJumpPossible = false;
+		}
+	);
+
+	// Are we in a replay?
+	gameWrapper->HookEvent(
+		"Function GameEvent_Soccar_TA.ReplayPlayback.BeginState",
+		[this](...) { IsInReplay = true; }
+	);
+	gameWrapper->HookEvent(
+		"Function GameEvent_Soccar_TA.ReplayPlayback.EndState",
+		[this](...) { IsInReplay = false; }
+	);
+
+	// Freeplay or training start/reset
+	gameWrapper->HookEvent(
+		"Function GameEvent_Soccar_TA.Countdown.BeginState",
+		[this](...)
+		{
+			HoldingFirstJump = false;
+			DoubleJumpPossible = false;
 		}
 	);
 }
 
-bool FastAerialTrainer::IsActive() {
+bool FastAerialTrainer::IsActive()
+{
 	return PluginEnabled
 		&& !gameWrapper->IsPaused()
 		&& (gameWrapper->IsInFreeplay() || gameWrapper->IsInCustomTraining());
@@ -139,43 +177,43 @@ bool FastAerialTrainer::IsActive() {
 
 void FastAerialTrainer::OnTick(CarWrapper car)
 {
-	if (!IsActive())
-		return;
-
 	float now = GetCurrentTime();
 
 	if (HoldingFirstJump)
-		holdFirstJumpDuration = now - holdFirstJumpStartTime;
-	else
-		holdFirstJumpDuration = holdFirstJumpStopTime - holdFirstJumpStartTime;
+		HoldFirstJumpDuration = now - HoldFirstJumpStartTime;
+	else if (HoldFirstJumpStopTime > 0)
+		HoldFirstJumpDuration = HoldFirstJumpStopTime - HoldFirstJumpStartTime;
 
 	if (HoldingFirstJump)
 		TimeBetweenFirstAndDoubleJump = 0;
-	else if (DoubleJumpPressedTime > holdFirstJumpStopTime)
-		TimeBetweenFirstAndDoubleJump = DoubleJumpPressedTime - holdFirstJumpStopTime;
-	else if (checkHoldingJoystickBack)
-		TimeBetweenFirstAndDoubleJump = now - holdFirstJumpStopTime;
+	else if (DoubleJumpPressedTime > HoldFirstJumpStopTime)
+		TimeBetweenFirstAndDoubleJump = DoubleJumpPressedTime - HoldFirstJumpStopTime;
+	else if (DoubleJumpPossible)
+		TimeBetweenFirstAndDoubleJump = now - HoldFirstJumpStopTime;
 	else
 		TimeBetweenFirstAndDoubleJump = 0;
 
 	// We either landed or have to land for another double jump. No need to record things further.
 	if (!car.HasFlip() || (car.IsOnGround() && !car.GetbJumped()))
-		checkHoldingJoystickBack = false;
+		DoubleJumpPossible = false;
 
 	ControllerInput input = car.GetInput();
-	if (checkHoldingJoystickBack)
+
+	if (DoubleJumpPossible || DoubleJumpPressedTime + RecordingAfterDoubleJump >= now)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
 		float intensity = std::min(1.f, sensitivity * input.Pitch);
-		float duration = now - lastTickTime;
+		float duration = now - LastTickTime;
 		HoldingJoystickBackDuration += intensity * duration;
-		lastTickTime = now;
+		TotalRecordingDuration += duration;
+		LastTickTime = now;
 
-		inputHistory.push_back({ intensity, (bool)input.HoldingBoost });
+		InputHistory.push_back({ intensity, (bool)input.HoldingBoost, (bool)input.Jumped });
 	}
 }
 
-static std::string toPrecision(float x, int precision) {
+static std::string toPrecision(float x, int precision)
+{
 	std::stringstream stream;
 	stream << std::fixed << std::setprecision(precision) << x;
 	return stream.str();
@@ -183,11 +221,8 @@ static std::string toPrecision(float x, int precision) {
 
 void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
-	if (!IsActive())
-		return;
-
 	DrawBar(
-		canvas, "Hold First Jump: ", holdFirstJumpDuration * 1000, (float)JumpDuration_HighestValue,
+		canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000, (float)JumpDuration_HighestValue,
 		GuiPosition, BarSize(),
 		GuiColorBackground, JumpDuration_RangeList
 	);
@@ -198,10 +233,10 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 		GuiColorBackground, DoubleJumpDuration_RangeList
 	);
 
-	canvas.SetColor(LinearColor(255, 255, 255, 255));
+	canvas.SetColor(GuiColorBorder);
 	canvas.SetPosition(GuiPosition + (Offset() * 2));
-	float JoystickBackDurationPercentage = !totalJumpTime ? 0.f : 100.f * HoldingJoystickBackDuration / totalJumpTime;
-	canvas.DrawString("Tilt Between Jumps: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
+	float JoystickBackDurationPercentage = !TotalRecordingDuration ? 0.f : 100.f * HoldingJoystickBackDuration / TotalRecordingDuration;
+	canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
 
 	if (GuiDrawPitchHistory)
 		DrawPitchHistory(canvas);
@@ -241,21 +276,22 @@ void FastAerialTrainer::DrawBar(
 	canvas.FillBox(Vector2{ (int)(barSize.X * result), barSize.Y });
 
 	// Draw border
-	canvas.SetColor(LinearColor(255, 255, 255, 255));
+	canvas.SetColor(GuiColorBorder);
 	canvas.SetPosition(barPos);
 	canvas.DrawBox(barSize);
 	for (Range& range : colorRanges)
 	{
-		canvas.SetColor(LinearColor(255, 255, 255, 255));
+		canvas.SetColor(GuiColorBorder);
 		float result = range.max / maxValue;
-		if (result < 1.f) {
+		if (result < 1.f)
+		{
 			canvas.SetPosition(barPos + Vector2{ (int)(result * barSize.X), 0 });
 			canvas.FillBox(Vector2{ 2, barSize.Y });
 		}
 	}
 
 	// Draw text
-	canvas.SetColor(LinearColor(255, 255, 255, 255));
+	canvas.SetColor(GuiColorBorder);
 	canvas.SetPosition(barPos + Vector2{ 0, barSize.Y });
 	canvas.DrawString(text + toPrecision(value, 1) + " ms", FontSize(), FontSize());
 }
@@ -263,15 +299,15 @@ void FastAerialTrainer::DrawBar(
 void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 {
 	Vector2F offset = (Vector2F() + Offset()) * 2.6f + GuiPosition;
-	canvas.SetColor(LinearColor(255, 255, 255, 127));
+	canvas.SetColor(GuiColorBorder);
 	float boxPadding = GuiSize / 200.f;
 	canvas.SetPosition(offset - boxPadding);
 	canvas.DrawBox(Vector2{ GuiSize, GuiSize / 10 } + (int)(2 * boxPadding));
 
 	int i = 0;
-	int size = (int)inputHistory.size();
+	int size = (int)InputHistory.size();
 	InputHistoryItem prevInput{};
-	for (InputHistoryItem currentInput : inputHistory)
+	for (InputHistoryItem currentInput : InputHistory)
 	{
 		if (i > 0 && currentInput.pitch >= 0 && prevInput.pitch >= 0)
 		{
@@ -283,8 +319,9 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + offset);
 			canvas.FillBox(Vector2F{ end.X - start.X, GuiSize / 10 - std::max(start.Y, end.Y) });
 		}
-		if (i % 12 == 0) {
-			canvas.SetColor(LinearColor(200, 200, 200, 200));
+		if (currentInput.jumped)
+		{
+			canvas.SetColor(GuiColorBorder);
 			float x = (float)i / size * GuiSize;
 			canvas.DrawLine(Vector2F{ x, 0 } + offset, Vector2F{ x, GuiSize / 10.f } + offset, GuiSize / 300.f);
 		}

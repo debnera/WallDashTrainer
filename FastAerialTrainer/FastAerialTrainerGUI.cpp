@@ -22,14 +22,13 @@ static bool PercentageSlider(const char* label, float& value, float max = 1.f) {
 	return retVal;
 }
 
-
-// Render the plugin settings here
-// This will show up in bakkesmod when the plugin is loaded at
-//  f2 -> plugins -> FastAerialTrainer
 void FastAerialTrainer::RenderSettings()
 {
 	if (ImGui::Checkbox("Enable Plugin", &PluginEnabled))
 		cvarManager->getCvar(PLUGIN_ENABLED).setValue(PluginEnabled);
+
+	if (ImGui::DragFloat("Record After Double Jump", &RecordingAfterDoubleJump, 0.005f, 0, FLT_MAX, "%.1f seconds"))
+		cvarManager->getCvar(RECORD_AFTER_DOUBLE_JUMP).setValue(RecordingAfterDoubleJump);
 
 	if (ImGui::DragInt("GUI Position X", &GuiPosition.X))
 		cvarManager->getCvar(GUI_POSITION_X).setValue(GuiPosition.X);
@@ -39,6 +38,9 @@ void FastAerialTrainer::RenderSettings()
 
 	if (ImGui::DragInt("GUI Size", &GuiSize))
 		cvarManager->getCvar(GUI_SIZE).setValue(GuiSize);
+
+	if (ColorPicker("Border and Text Color", GuiColorBorder))
+		cvarManager->getCvar(GUI_BORDER_COLOR).setValue(GuiColorBorder);
 
 	if (ColorPicker("Background Color", GuiColorBackground))
 		cvarManager->getCvar(GUI_BACKGROUND_COLOR).setValue(GuiColorBackground);
@@ -55,10 +57,10 @@ void FastAerialTrainer::RenderSettings()
 	if (ColorPicker("Failure Color", GuiColorFailure))
 		cvarManager->getCvar(GUI_COLOR_FAILURE).setValue(GuiColorFailure);
 
-	if (ImGui::DragInt("First Jump Hold - Highest Value", &JumpDuration_HighestValue, 1.f, 1, INT_MAX))
+	if (ImGui::DragInt("First Jump Hold - Highest Value", &JumpDuration_HighestValue, 1.f, 1, INT_MAX, "%d ms"))
 		cvarManager->getCvar(GUI_JUMP_MAX).setValue(JumpDuration_HighestValue);
 
-	if (ImGui::DragInt("Time to Double Jump - Highest Value", &DoubleJumpDuration_HighestValue, 1.f, 1, INT_MAX))
+	if (ImGui::DragInt("Time to Double Jump - Highest Value", &DoubleJumpDuration_HighestValue, 1.f, 1, INT_MAX, "%d ms"))
 		cvarManager->getCvar(GUI_DOUBLE_JUMP_MAX).setValue(DoubleJumpDuration_HighestValue);
 
 	if (ImGui::Checkbox("Draw Pitch History", &GuiDrawPitchHistory))

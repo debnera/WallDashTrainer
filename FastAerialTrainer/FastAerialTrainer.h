@@ -10,9 +10,11 @@
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 constexpr auto PLUGIN_ENABLED = "fast_aerial_trainer_enabled";
+constexpr auto RECORD_AFTER_DOUBLE_JUMP = "fast_aerial_trainer_record_after_double_jump";
 constexpr auto GUI_POSITION_X = "fast_aerial_trainer_gui_pos_x";
 constexpr auto GUI_POSITION_Y = "fast_aerial_trainer_gui_pos_y";
 constexpr auto GUI_SIZE = "fast_aerial_trainer_gui_size";
+constexpr auto GUI_BORDER_COLOR = "fast_aerial_trainer_gui_border_color";
 constexpr auto GUI_BACKGROUND_COLOR = "fast_aerial_trainer_gui_background_color";
 constexpr auto GUI_PREVIEW_OPACTIY = "fast_aerial_trainer_gui_preview_opactiy";
 constexpr auto GUI_COLOR_SUCCESS = "fast_aerial_trainer_gui_color_success";
@@ -35,32 +37,38 @@ struct InputHistoryItem
 {
 	float pitch;
 	bool boost;
+	bool jumped;
 };
 
 class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
 {
 	std::shared_ptr<PersistentStorage> persistentStorage;
 
+
+	// Settings
+
 	bool PluginEnabled = true;
+	bool IsInReplay = false;
+	float RecordingAfterDoubleJump = 0.2;
+
 
 	// Measuring
 
 	bool HoldingFirstJump = false;
-	float holdFirstJumpStartTime = 0.f;
-	float holdFirstJumpStopTime = 0.f;
-	float holdFirstJumpDuration = 0.f;
-
-	float DoubleJumpPressedTime = 0.f;
-	float TimeBetweenFirstAndDoubleJump = 0.f;
-
-	bool checkHoldingJoystickBack = false;
-	float lastTickTime = 0.f;
-	float HoldingJoystickBackDuration = 0.f;
-	std::vector<InputHistoryItem> inputHistory;
-
-	float totalJumpTime = 0.f;
+	float HoldFirstJumpStartTime = 0;
+	float HoldFirstJumpStopTime = 0;
+	float HoldFirstJumpDuration = 0;
 
 
+	bool DoubleJumpPossible = false;
+	float DoubleJumpPressedTime = 0;
+	float TimeBetweenFirstAndDoubleJump = 0;
+	float HoldingJoystickBackDuration = 0;
+	float TotalRecordingDuration = 0;
+	
+	float LastTickTime = 0;
+	std::vector<InputHistoryItem> InputHistory;
+	
 	// Styling
 
 	Vector2 GuiPosition = { 610, 16 };
@@ -69,6 +77,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	Vector2 Offset() { return { 0, GuiSize / 10 }; }
 	float FontSize() { return GuiSize / 350.f; }
 	float GuiColorPreviewOpacity = 0.2f;
+	LinearColor GuiColorBorder = LinearColor(255, 255, 255, 255);
 	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 150);
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
