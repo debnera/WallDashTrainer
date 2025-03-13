@@ -91,17 +91,22 @@ void FastAerialTrainer::onLoad()
 		[this](CarWrapper car, void* params, std::string eventName)
 		{
 			if (IsInReplay || !IsActive()) return;
+			if (!IsLocalCar(car)) return;
 
-			FastAerialTrainer::OnTick(car);
+			auto input = static_cast<ControllerInput*>(params);
+			if (!input) return;
+
+			FastAerialTrainer::OnTick(car, input);
 		}
 	);
 
 	// Initial jump start
-	gameWrapper->HookEvent(
+	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
 		"Function CarComponent_Jump_TA.Active.BeginState",
-		[this](std::string eventname)
+		[this](CarComponentWrapper component, void* params, std::string eventName)
 		{
 			if (IsInReplay || !IsActive()) return;
+			if (!IsLocalCar(component.GetCar())) return;
 
 			float now = GetCurrentTime();
 
@@ -121,33 +126,35 @@ void FastAerialTrainer::onLoad()
 		}
 	);
 
-	// Jump released
-	gameWrapper->HookEvent(
-		"Function TAGame.Car_TA.OnJumpReleased",
-		[this](std::string eventname)
-		{
-			if (IsInReplay || !IsActive()) return;
-
-			if (HoldingFirstJump)
-			{
-				HoldingFirstJump = false;
-				HoldFirstJumpStopTime = GetCurrentTime();
-			}
-		}
-	);
-
 	// Double jump
-	gameWrapper->HookEvent(
+	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
 		"Function CarComponent_DoubleJump_TA.Active.BeginState",
-		[this](std::string eventname)
+		[this](CarComponentWrapper component, void* params, std::string eventName)
 		{
 			if (IsInReplay || !IsActive()) return;
+			if (!IsLocalCar(component.GetCar())) return;
 
 			// Only register the double jump if we didn't loose our flip or landed in between.
 			if (DoubleJumpPossible)
 				DoubleJumpPressedTime = GetCurrentTime();
 
 			DoubleJumpPossible = false;
+		}
+	);
+
+	// Jump released
+	gameWrapper->HookEventWithCaller<CarWrapper>(
+		"Function TAGame.Car_TA.OnJumpReleased",
+		[this](CarWrapper car, void* params, std::string eventName)
+		{
+			if (IsInReplay || !IsActive()) return;
+			if (!IsLocalCar(car)) return;
+
+			if (HoldingFirstJump)
+			{
+				HoldingFirstJump = false;
+				HoldFirstJumpStopTime = GetCurrentTime();
+			}
 		}
 	);
 
@@ -179,7 +186,13 @@ bool FastAerialTrainer::IsActive()
 		&& (gameWrapper->IsInFreeplay() || gameWrapper->IsInCustomTraining());
 }
 
-void FastAerialTrainer::OnTick(CarWrapper car)
+bool FastAerialTrainer::IsLocalCar(CarWrapper car)
+{
+	CarWrapper localCar = gameWrapper->GetLocalCar();
+	return car.memory_address == localCar.memory_address;
+}
+
+void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput* input)
 {
 	float now = GetCurrentTime();
 
@@ -201,21 +214,19 @@ void FastAerialTrainer::OnTick(CarWrapper car)
 	if (!car.HasFlip() || (car.IsOnGround() && !car.GetbJumped()))
 		DoubleJumpPossible = false;
 
-	ControllerInput input = car.GetInput();
-
 	auto InAfterDoubleJumpRecording = DoubleJumpPressedTime <= now
 		&& now <= DoubleJumpPressedTime + RecordingAfterDoubleJump;
 
 	if (DoubleJumpPossible || InAfterDoubleJumpRecording)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
-		float intensity = std::min(1.f, sensitivity * input.Pitch);
+		float intensity = std::min(1.f, sensitivity * input->Pitch);
 		float duration = now - LastTickTime;
 		HoldingJoystickBackDuration += intensity * duration;
 		TotalRecordingDuration += duration;
 		LastTickTime = now;
 
-		InputHistory.push_back({ intensity, (bool)input.HoldingBoost, (bool)input.Jumped });
+		InputHistory.push_back({ intensity, (bool)input->HoldingBoost, (bool)input->Jumped });
 	}
 }
 
@@ -251,7 +262,7 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	{
 		DrawPitchHistory(canvas);
 		DrawBoostHistory(canvas);
-}
+	}
 }
 
 void FastAerialTrainer::DrawBar(
@@ -375,16 +386,16 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 		}
 		i++;
 	}
-		}
+}
 
 void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
-		{
+{
 	float borderWidth = GuiSize / 200.f;
 	float textWidth = 90;
 	Vector2F topLeft = GuiPosition() + (Offset() * 3.8f) + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = BarSize();
 
-			canvas.SetColor(GuiColorBorder);
+	canvas.SetColor(GuiColorBorder);
 	DrawCenteredText(
 		canvas,
 		"Boost",
@@ -414,4 +425,5 @@ void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
 
 void FastAerialTrainer::onUnload()
 {
+	// nothing to unload...
 }

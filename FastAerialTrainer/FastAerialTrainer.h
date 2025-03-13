@@ -43,7 +43,6 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 {
 	std::shared_ptr<PersistentStorage> persistentStorage;
 
-
 	// Settings
 
 	bool PluginEnabled = true;
@@ -113,9 +112,10 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	// Methods
 
 	bool IsActive();
+	bool IsLocalCar(CarWrapper car);
 
 	float GetCurrentTime();
-	void OnTick(CarWrapper car);
+	void OnTick(CarWrapper car, ControllerInput* input);
 
 	void RenderCanvas(CanvasWrapper canvas);
 	void DrawBar(CanvasWrapper& canvas, std::string text, float value, float maxValue, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
