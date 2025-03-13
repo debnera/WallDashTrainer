@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0
+
+- Split pitch and boost history
+- Ignore input for non-player cars
+- Show warning in custom training when jump is not first input
+
 ## 2.3.0
 
 - Record pitch input some configurable time after double jumping.

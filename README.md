@@ -28,12 +28,22 @@ Higher is better: 100% means you pitched upwards fully. 50% could mean you pitch
 
 ### Pitch History
 
-This graph shows your pitch input and when you pressed boost.\
+This graph shows your pitch input.\
 The horizontal axis represents time starting from the initial jump.\
 The vertical axis shows your pitch up input between 0 and 1 (scaled with input sensitivity).\
-The color indicates if you pressed boost or not.\
-The vertical line shows when you pressed jump.\
+The vertical line shows when you double jumped.\
 This graph helps in improving your takeoff, because you can see where you missed crucial inputs.
+
+### Boost History
+
+This graph shows your boost input.\
+The horizontal axis represents time starting from the initial jump.
+
+### First Input Warning in Custom Training
+
+Shows a warning when jump wasn't the first input in custom training.\
+If you want to avoid steer or pitch inputs from starting the countdown, I recommend installing the plugin [Fix Custom Training Start](https://bakkesplugins.com/plugins/view/311).
+A nice training pack to check your progress on fast aerials is ["Fast Aerial Test - Touch Ball" from Lazord](https://prejump.com/training-packs/B66E-6D43-7E93-F055): B66E-6D43-7E93-F055
 
 ## Improvements over the Original Plugin
 
