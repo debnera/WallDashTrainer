@@ -68,7 +68,10 @@ void FastAerialTrainer::RenderSettings()
 		cvarManager->getCvar(GUI_DOUBLE_JUMP_MAX).setValue(DoubleJumpDuration_HighestValue);
 
 	if (ImGui::Checkbox("Draw Pitch History", &GuiDrawPitchHistory))
-		cvarManager->getCvar(GUI_DRAW_HISTORY).setValue(GuiDrawPitchHistory);
+		cvarManager->getCvar(GUI_DRAW_PITCH_HISTORY).setValue(GuiDrawPitchHistory);
+
+	if (ImGui::Checkbox("Draw Boost History", &GuiDrawBoostHistory))
+		cvarManager->getCvar(GUI_DRAW_BOOST_HISTORY).setValue(GuiDrawBoostHistory);
 
 	if (ColorPickerWithoutAlpha("Pitch/Boost History Color", GuiPitchHistoryColor))
 		cvarManager->getCvar(GUI_COLOR_HISTORY).setValue(GuiPitchHistoryColor);

@@ -68,7 +68,8 @@ void FastAerialTrainer::onLoad()
 	registerIntCvar(GUI_JUMP_MAX, JumpDuration_HighestValue);
 	registerIntCvar(GUI_DOUBLE_JUMP_MAX, DoubleJumpDuration_HighestValue);
 	registerPercentCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
-	registerBoolCvar(GUI_DRAW_HISTORY, GuiDrawPitchHistory);
+	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiDrawPitchHistory);
+	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiDrawBoostHistory);
 	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
 	registerColorCvar(GUI_BACKGROUND_COLOR, GuiColorBackground);
 	registerColorCvar(GUI_COLOR_SUCCESS, GuiColorSuccess);
@@ -259,10 +260,10 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
 
 	if (GuiDrawPitchHistory)
-	{
 		DrawPitchHistory(canvas);
+
+	if (GuiDrawBoostHistory)
 		DrawBoostHistory(canvas);
-	}
 }
 
 void FastAerialTrainer::DrawBar(
@@ -392,7 +393,8 @@ void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
 {
 	float borderWidth = GuiSize / 200.f;
 	float textWidth = 90;
-	Vector2F topLeft = GuiPosition() + (Offset() * 3.8f) + Vector2F{ borderWidth, 0 };
+	Vector2F offset = Offset() * (GuiDrawPitchHistory ? 3.8f : 2.6f);
+	Vector2F topLeft = GuiPosition() + offset + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = BarSize();
 
 	canvas.SetColor(GuiColorBorder);

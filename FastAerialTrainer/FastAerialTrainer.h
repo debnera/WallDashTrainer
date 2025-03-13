@@ -22,7 +22,8 @@ constexpr auto GUI_COLOR_WARNING = "fast_aerial_trainer_gui_color_warning";
 constexpr auto GUI_COLOR_FAILURE = "fast_aerial_trainer_gui_color_failure";
 constexpr auto GUI_JUMP_MAX = "fast_aerial_trainer_gui_jump_max";
 constexpr auto GUI_DOUBLE_JUMP_MAX = "fast_aerial_trainer_gui_double_jump_max";
-constexpr auto GUI_DRAW_HISTORY = "fast_aerial_trainer_gui_draw_history";
+constexpr auto GUI_DRAW_PITCH_HISTORY = "fast_aerial_trainer_gui_draw_pitch_history";
+constexpr auto GUI_DRAW_BOOST_HISTORY = "fast_aerial_trainer_gui_draw_boost_history";
 constexpr auto GUI_COLOR_HISTORY = "fast_aerial_trainer_gui_color_history";
 
 struct Range
@@ -42,6 +43,7 @@ struct InputHistoryItem
 class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
 {
 	std::shared_ptr<PersistentStorage> persistentStorage;
+
 
 	// Settings
 
@@ -107,6 +109,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	int DoubleJumpDuration_HighestValue = 130;
 	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
 	bool GuiDrawPitchHistory = true;
+	bool GuiDrawBoostHistory = true;
 
 
 	// Methods
