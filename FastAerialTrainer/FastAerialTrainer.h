@@ -25,6 +25,7 @@ constexpr auto GUI_DOUBLE_JUMP_MAX = "fast_aerial_trainer_gui_double_jump_max";
 constexpr auto GUI_DRAW_PITCH_HISTORY = "fast_aerial_trainer_gui_draw_pitch_history";
 constexpr auto GUI_DRAW_BOOST_HISTORY = "fast_aerial_trainer_gui_draw_boost_history";
 constexpr auto GUI_COLOR_HISTORY = "fast_aerial_trainer_gui_color_history";
+constexpr auto GUI_SHOW_FIRST_INPUT_WARNING = "fast_aerial_trainer_gui_first_input_warning";
 
 struct Range
 {
@@ -59,7 +60,6 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	float HoldFirstJumpStopTime = 0;
 	float HoldFirstJumpDuration = 0;
 
-
 	bool DoubleJumpPossible = false;
 	float DoubleJumpPressedTime = 0;
 	float TimeBetweenFirstAndDoubleJump = 0;
@@ -68,6 +68,8 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 
 	float LastTickTime = 0;
 	std::vector<InputHistoryItem> InputHistory;
+
+	float TrainingStartTime = 0;
 
 
 	// Styling
@@ -110,6 +112,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
 	bool GuiDrawPitchHistory = true;
 	bool GuiDrawBoostHistory = true;
+	bool GuiShowFirstInputWarning = true;
 
 
 	// Methods
@@ -124,6 +127,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	void DrawBar(CanvasWrapper& canvas, std::string text, float value, float maxValue, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
 	void DrawPitchHistory(CanvasWrapper& canvas);
 	void DrawBoostHistory(CanvasWrapper& canvas);
+	void RenderFirstInputWarning(CanvasWrapper& canvas);
 
 	virtual void onLoad();
 	virtual void onUnload();

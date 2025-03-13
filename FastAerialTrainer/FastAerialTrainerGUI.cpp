@@ -75,4 +75,7 @@ void FastAerialTrainer::RenderSettings()
 
 	if (ColorPickerWithoutAlpha("Pitch/Boost History Color", GuiPitchHistoryColor))
 		cvarManager->getCvar(GUI_COLOR_HISTORY).setValue(GuiPitchHistoryColor);
+
+	if (ImGui::Checkbox("Show First Input Warning in Custom Training", &GuiShowFirstInputWarning))
+		cvarManager->getCvar(GUI_SHOW_FIRST_INPUT_WARNING).setValue(GuiShowFirstInputWarning);
 }

@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "FastAerialTrainer.h"
-#include "bakkesmod/wrappers/Engine/WorldInfoWrapper.h"
 
 #include <sstream>
 
@@ -13,9 +12,8 @@ float FastAerialTrainer::GetCurrentTime()
 {
 	ServerWrapper server = gameWrapper->GetCurrentGameState();
 	if (!server) return 0;
-	WorldInfoWrapper world = server.GetWorldInfo();
-	if (!world) return 0;
-	return world.GetTimeSeconds();
+
+	return server.GetSecondsElapsed();
 }
 
 static std::string to_string(LinearColor col)
@@ -70,6 +68,7 @@ void FastAerialTrainer::onLoad()
 	registerPercentCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
 	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiDrawPitchHistory);
 	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiDrawBoostHistory);
+	registerBoolCvar(GUI_SHOW_FIRST_INPUT_WARNING, GuiShowFirstInputWarning);
 	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
 	registerColorCvar(GUI_BACKGROUND_COLOR, GuiColorBackground);
 	registerColorCvar(GUI_COLOR_SUCCESS, GuiColorSuccess);
@@ -178,6 +177,15 @@ void FastAerialTrainer::onLoad()
 			DoubleJumpPossible = false;
 		}
 	);
+
+	// Custom training attempt started
+	gameWrapper->HookEvent(
+		"Function TAGame.TrainingEditorMetrics_TA.TrainingShotAttempt",
+		[this](...)
+		{
+			TrainingStartTime = GetCurrentTime();
+		}
+	);
 }
 
 bool FastAerialTrainer::IsActive()
@@ -264,6 +272,9 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 
 	if (GuiDrawBoostHistory)
 		DrawBoostHistory(canvas);
+
+	if (GuiShowFirstInputWarning)
+		RenderFirstInputWarning(canvas);
 }
 
 void FastAerialTrainer::DrawBar(
@@ -423,6 +434,22 @@ void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
 		}
 		i++;
 	}
+}
+
+void FastAerialTrainer::RenderFirstInputWarning(CanvasWrapper& canvas)
+{
+	if (!gameWrapper->IsInCustomTraining()) return;
+	if (TrainingStartTime >= HoldFirstJumpStartTime) return;
+
+	float offset = 2.6f;
+	if (GuiDrawPitchHistory) offset += 1.2f;
+	if (GuiDrawBoostHistory) offset += 0.6f;
+
+	Vector2F position = GuiPosition() + Offset() * offset;
+
+	canvas.SetColor(GuiColorBorder);
+	canvas.SetPosition(position);
+	canvas.DrawString("Jump was not first input!", FontSize(), FontSize());
 }
 
 void FastAerialTrainer::onUnload()
