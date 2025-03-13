@@ -75,7 +75,6 @@ void FastAerialTrainer::onLoad()
 	registerColorCvar(GUI_COLOR_WARNING, GuiColorWarning);
 	registerColorCvar(GUI_COLOR_FAILURE, GuiColorFailure);
 	registerColorCvar(GUI_COLOR_HISTORY, GuiPitchHistoryColor);
-	registerColorCvar(GUI_COLOR_HISTORY_BOOST, GuiPitchHistoryColorBoost);
 
 
 	gameWrapper->RegisterDrawable(
@@ -249,7 +248,10 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
 
 	if (GuiDrawPitchHistory)
+	{
 		DrawPitchHistory(canvas);
+		DrawBoostHistory(canvas);
+}
 }
 
 void FastAerialTrainer::DrawBar(
@@ -306,36 +308,106 @@ void FastAerialTrainer::DrawBar(
 	canvas.DrawString(text + toPrecision(value, 1) + " ms", FontSize(), FontSize());
 }
 
+static void DrawCenteredText(CanvasWrapper canvas, std::string text, float fontSize, Vector2F topLeft, Vector2F boxSize)
+{
+	Vector2F textSize = canvas.GetStringSize(text, fontSize, fontSize);
+	canvas.SetPosition(topLeft + (boxSize - textSize) / 2);
+	canvas.DrawString(text, fontSize, fontSize);
+}
+
 void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 {
-	Vector2F offset = (Vector2F() + Offset()) * 2.6f + GuiPosition();
+	float borderWidth = GuiSize / 200.f;
+	float textWidth = 90;
+	Vector2F topLeft = GuiPosition() + (Offset() * 2.6f) + Vector2F{ borderWidth, 0 };
+	Vector2F innerBoxSize = Vector2F{ GuiSize, GuiSize / 10 };
+
 	canvas.SetColor(GuiColorBorder);
-	float boxPadding = GuiSize / 200.f;
-	canvas.SetPosition(offset - boxPadding);
-	canvas.DrawBox(Vector2F{ GuiSize, GuiSize / 10 } + (2 * boxPadding));
+	DrawCenteredText(
+		canvas,
+		"Pitch",
+		FontSize(),
+		topLeft + Vector2F{ innerBoxSize.X - textWidth, 0 },
+		Vector2F{ textWidth, innerBoxSize.Y }
+	);
+	innerBoxSize -= Vector2F{ textWidth, 0 };
+
+	canvas.SetColor(GuiColorBorder);
+	canvas.SetPosition(topLeft - borderWidth);
+	canvas.DrawBox(innerBoxSize + (2 * borderWidth));
+
+	int size = (int)InputHistory.size();
+	int i = 0;
+	InputHistoryItem previousInput{};
+	for (InputHistoryItem currentInput : InputHistory)
+	{
+		if (i > 0)
+		{
+			float startX = (float)(i - 1) / (size - 1);
+			float endX = (float)i / (size - 1);
+
+			float startY = 1.f - std::clamp(previousInput.pitch, 0.f, 1.f);
+			float endY = 1.f - std::clamp(currentInput.pitch, 0.f, 1.f);
+
+			// Draw a right triangle from `start` to `end` and a rectangle beneath it.
+			Vector2F start = innerBoxSize * Vector2F{ startX, startY };
+			Vector2F end = innerBoxSize * Vector2F{ endX, endY };
+			Vector2F base = start.Y > end.Y ? Vector2F{ end.X, start.Y } : Vector2F{ start.X, end.Y };
+
+			canvas.SetColor(GuiPitchHistoryColor); // Note: `FillTriangle` ignores transparency.
+			canvas.FillTriangle(base + topLeft, start + topLeft, end + topLeft);
+			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + topLeft);
+			canvas.FillBox(Vector2F{ end.X - start.X, innerBoxSize.Y - std::max(start.Y, end.Y) });
+		}
+		previousInput = currentInput;
+		i++;
+	}
+
+	i = 0;
+	for (InputHistoryItem input : InputHistory)
+	{
+		if (input.jumped)
+		{
+			canvas.SetColor(GuiColorBorder);
+			Vector2F start = topLeft + Vector2F{ (float)i / size * innerBoxSize.X, 0.f };
+			Vector2F end = start + Vector2F{ 0, innerBoxSize.Y };
+			canvas.DrawLine(start, start + Vector2F{ 0,innerBoxSize.Y }, borderWidth);
+		}
+		i++;
+	}
+		}
+
+void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
+		{
+	float borderWidth = GuiSize / 200.f;
+	float textWidth = 90;
+	Vector2F topLeft = GuiPosition() + (Offset() * 3.8f) + Vector2F{ borderWidth, 0 };
+	Vector2F innerBoxSize = BarSize();
+
+			canvas.SetColor(GuiColorBorder);
+	DrawCenteredText(
+		canvas,
+		"Boost",
+		FontSize(),
+		topLeft + Vector2F{ innerBoxSize.X - textWidth, 0 },
+		Vector2F{ textWidth, innerBoxSize.Y }
+	);
+	innerBoxSize -= Vector2F{ textWidth, 0 };
+
+	canvas.SetColor(GuiColorBorder);
+	canvas.SetPosition(topLeft - borderWidth);
+	canvas.DrawBox(innerBoxSize + (2 * borderWidth));
 
 	int i = 0;
 	int size = (int)InputHistory.size();
-	InputHistoryItem prevInput{};
-	for (InputHistoryItem currentInput : InputHistory)
+	for (InputHistoryItem input : InputHistory)
 	{
-		if (i > 0 && currentInput.pitch >= 0 && prevInput.pitch >= 0)
+		if (input.boost)
 		{
-			Vector2F start = { (float)(i - 1) / size * GuiSize, (1 - prevInput.pitch) * GuiSize / 10 };
-			Vector2F end = { (float)i / size * GuiSize, (1 - currentInput.pitch) * GuiSize / 10 };
-			Vector2F base = start.Y > end.Y ? Vector2F{ end.X, start.Y } : Vector2F{ start.X, end.Y };
-			canvas.SetColor(currentInput.boost ? GuiPitchHistoryColorBoost : GuiPitchHistoryColor);
-			canvas.FillTriangle(base + offset, start + offset, end + offset); // `FillTriangle` ignores transparency.
-			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + offset);
-			canvas.FillBox(Vector2F{ end.X - start.X, GuiSize / 10 - std::max(start.Y, end.Y) });
+			canvas.SetColor(GuiPitchHistoryColor);
+			canvas.SetPosition(topLeft + innerBoxSize * Vector2F{ (float)i / size, 0 });
+			canvas.FillBox(innerBoxSize * Vector2F{ 1.f / size, 1.f });
 		}
-		if (currentInput.jumped)
-		{
-			canvas.SetColor(GuiColorBorder);
-			float x = (float)i / size * GuiSize;
-			canvas.DrawLine(Vector2F{ x, 0 } + offset, Vector2F{ x, GuiSize / 10.f } + offset, GuiSize / 300.f);
-		}
-		prevInput = currentInput;
 		i++;
 	}
 }
