@@ -89,7 +89,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	}
 	float GuiColorPreviewOpacity = 0.2f;
 	LinearColor GuiColorBorder = LinearColor(255, 255, 255, 255);
-	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 150);
+	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 128);
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
 	LinearColor GuiColorFailure = LinearColor(255, 0, 0, 210);

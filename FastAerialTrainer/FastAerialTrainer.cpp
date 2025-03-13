@@ -340,8 +340,8 @@ static void DrawCenteredText(CanvasWrapper canvas, std::string text, float fontS
 
 void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 {
-	float borderWidth = GuiSize / 200.f;
-	float textWidth = 90;
+	float borderWidth = 2;
+	float textWidth = 45 * FontSize();
 	Vector2F topLeft = GuiPosition() + (Offset() * 2.6f) + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = Vector2F{ GuiSize, GuiSize / 10 };
 
@@ -394,7 +394,7 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 			canvas.SetColor(GuiColorBorder);
 			Vector2F start = topLeft + Vector2F{ (float)i / size * innerBoxSize.X, 0.f };
 			Vector2F end = start + Vector2F{ 0, innerBoxSize.Y };
-			canvas.DrawLine(start, start + Vector2F{ 0,innerBoxSize.Y }, borderWidth);
+			canvas.DrawLine(start, start + Vector2F{ 0,innerBoxSize.Y }, 2 * borderWidth);
 		}
 		i++;
 	}
@@ -402,8 +402,8 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 
 void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
 {
-	float borderWidth = GuiSize / 200.f;
-	float textWidth = 90;
+	float borderWidth = 2;
+	float textWidth = 45 * FontSize();
 	Vector2F offset = Offset() * (GuiDrawPitchHistory ? 3.8f : 2.6f);
 	Vector2F topLeft = GuiPosition() + offset + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = BarSize();
