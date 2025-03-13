@@ -2,6 +2,7 @@
 #include "FastAerialTrainer.h"
 
 #include <sstream>
+#include <set>
 
 
 BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINTYPE_FREEPLAY);
@@ -24,6 +25,47 @@ static std::string to_string(LinearColor col)
 		+ std::to_string((int)col.B) + ","
 		+ std::to_string((int)col.A) + ")";
 }
+
+std::vector<float> FastAerialTrainer::SplitString(std::string str)
+{
+	std::vector<float> values;
+	std::istringstream stream(str);
+	std::string value;
+
+	while (std::getline(stream, value, ','))
+		values.push_back(strtof(value.c_str(), NULL));
+
+	return values;
+};
+std::vector<Range> FastAerialTrainer::BuildRanges(std::vector<float> values, std::vector<LinearColor*> colors)
+{
+	std::vector<Range> ranges;
+
+	for (int i = 0; i < std::min(colors.size(), values.size() - 1); i++)
+	{
+		ranges.push_back({
+			.min = values[i],
+			.max = values[i + 1],
+			.color = colors[i]
+			});
+	}
+
+	return ranges;
+};
+std::string FastAerialTrainer::RangesToString(std::vector<Range> ranges)
+{
+	std::string result;
+
+	if (ranges.empty())
+		return result;
+
+	result = std::to_string(ranges[0].min);
+
+	for (auto& range : ranges)
+		result += "," + std::to_string(range.max);
+
+	return result;
+};
 
 void FastAerialTrainer::onLoad()
 {
@@ -63,8 +105,6 @@ void FastAerialTrainer::onLoad()
 	registerPercentCvar(GUI_POSITION_RELATIVE_X, GuiPositionRelative.X);
 	registerPercentCvar(GUI_POSITION_RELATIVE_Y, GuiPositionRelative.Y);
 	registerFloatCvar(GUI_SIZE, GuiSize);
-	registerIntCvar(GUI_JUMP_MAX, JumpDuration_HighestValue);
-	registerIntCvar(GUI_DOUBLE_JUMP_MAX, DoubleJumpDuration_HighestValue);
 	registerPercentCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
 	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiDrawPitchHistory);
 	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiDrawBoostHistory);
@@ -75,7 +115,32 @@ void FastAerialTrainer::onLoad()
 	registerColorCvar(GUI_COLOR_WARNING, GuiColorWarning);
 	registerColorCvar(GUI_COLOR_FAILURE, GuiColorFailure);
 	registerColorCvar(GUI_COLOR_HISTORY, GuiPitchHistoryColor);
-
+	persistentStorage->RegisterPersistentCvar(GUI_JUMP_RANGES, RangesToString(JumpDurationRanges), "", false)
+		.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
+			{
+				JumpDurationRanges = BuildRanges(
+					SplitString(cvar.getStringValue()),
+					{
+						&GuiColorFailure,
+						&GuiColorWarning,
+						&GuiColorSuccess,
+						&GuiColorWarning,
+						&GuiColorFailure
+					}
+				);
+			});
+	persistentStorage->RegisterPersistentCvar(GUI_DOUBLE_JUMP_RANGES, RangesToString(DoubleJumpDurationRanges), "", false)
+		.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
+			{
+				DoubleJumpDurationRanges = BuildRanges(
+					SplitString(cvar.getStringValue()),
+					{
+						&GuiColorSuccess,
+						&GuiColorWarning,
+						&GuiColorFailure
+					}
+				);
+			});
 
 	gameWrapper->RegisterDrawable(
 		[this](CanvasWrapper canvas)
@@ -251,15 +316,15 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	ScreenSize = canvas.GetSize();
 
 	DrawBar(
-		canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000, (float)JumpDuration_HighestValue,
+		canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000,
 		GuiPosition(), BarSize(),
-		GuiColorBackground, JumpDuration_RangeList
+		GuiColorBackground, JumpDurationRanges
 	);
 
 	DrawBar(
-		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000, (float)DoubleJumpDuration_HighestValue,
+		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000,
 		GuiPosition() + Offset(), BarSize(),
-		GuiColorBackground, DoubleJumpDuration_RangeList
+		GuiColorBackground, DoubleJumpDurationRanges
 	);
 
 	canvas.SetColor(GuiColorBorder);
@@ -278,49 +343,69 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 }
 
 void FastAerialTrainer::DrawBar(
-	CanvasWrapper& canvas, std::string text, float value, float maxValue,
+	CanvasWrapper& canvas, std::string text, float value,
 	Vector2F barPos, Vector2F barSize,
 	LinearColor backgroundColor, std::vector<Range>& colorRanges
 )
 {
+	if (colorRanges.empty())
+		return;
+
+	float minValue = colorRanges.front().min;
+	float maxValue = colorRanges.back().max;
+	auto valueToPosition = [&](float value)
+		{
+			auto ratio = (value - minValue) / (maxValue - minValue);
+			return barSize.X * std::clamp(ratio, 0.f, 1.f);
+		};
+
 	// Draw background
 	canvas.SetPosition(barPos);
 	canvas.SetColor(backgroundColor);
 	canvas.FillBox(barSize);
+
 	for (Range& range : colorRanges)
 	{
 		LinearColor preview = *range.color;
 		preview.A *= GuiColorPreviewOpacity;
 		canvas.SetColor(preview);
-		float left = std::min(range.min / maxValue, 1.f);
-		float width = std::min((range.max - range.min) / maxValue, 1.f - left);
-		canvas.SetPosition(barPos + Vector2F{ left * barSize.X, 0 });
-		canvas.FillBox(Vector2F{ width * barSize.X, barSize.Y });
+
+		float left = valueToPosition(range.min);
+		float right = valueToPosition(range.max);
+		float width = right - left;
+		canvas.SetPosition(barPos + Vector2F{ left, 0 });
+		canvas.FillBox(Vector2F{ width, barSize.Y });
 	}
 
 	// Draw colored bar
-	canvas.SetPosition(barPos);
-	for (Range& range : colorRanges)
+	if (value < minValue)
+		canvas.SetColor(*colorRanges.front().color);
+	else if (value >= maxValue)
+		canvas.SetColor(*colorRanges.back().color);
+	else
 	{
-		if (range.min <= value && value <= range.max)
+		for (Range& range : colorRanges)
 		{
-			canvas.SetColor(*range.color);
+			if (range.min <= value && value < range.max)
+				canvas.SetColor(*range.color);
 		}
 	}
-	float result = std::min(1.f, value / maxValue);
-	canvas.FillBox(Vector2F{ barSize.X * result, barSize.Y });
+	canvas.SetPosition(barPos);
+	canvas.FillBox(Vector2F{ valueToPosition(value), barSize.Y });
 
-	// Draw border
+	// Draw separators
 	canvas.SetColor(GuiColorBorder);
 	canvas.SetPosition(barPos);
 	canvas.DrawBox(barSize);
-	for (Range& range : colorRanges)
+
+	std::set<float> values;
+	for (Range& range : colorRanges) values.insert({ range.min, range.max });
+	for (float value : values)
 	{
-		canvas.SetColor(GuiColorBorder);
-		float result = range.max / maxValue;
-		if (result < 1.f)
+		if (minValue < value && value < maxValue)
 		{
-			canvas.SetPosition(barPos + Vector2{ (int)(result * barSize.X), 0 });
+			canvas.SetColor(GuiColorBorder);
+			canvas.SetPosition(barPos + Vector2F{ valueToPosition(value), 0 });
 			canvas.FillBox(Vector2F{ 2, barSize.Y });
 		}
 	}

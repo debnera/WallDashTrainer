@@ -20,8 +20,8 @@ constexpr auto GUI_PREVIEW_OPACTIY = "fast_aerial_trainer_gui_preview_opacity";
 constexpr auto GUI_COLOR_SUCCESS = "fast_aerial_trainer_gui_color_success";
 constexpr auto GUI_COLOR_WARNING = "fast_aerial_trainer_gui_color_warning";
 constexpr auto GUI_COLOR_FAILURE = "fast_aerial_trainer_gui_color_failure";
-constexpr auto GUI_JUMP_MAX = "fast_aerial_trainer_gui_jump_max";
-constexpr auto GUI_DOUBLE_JUMP_MAX = "fast_aerial_trainer_gui_double_jump_max";
+constexpr auto GUI_JUMP_RANGES = "fast_aerial_trainer_gui_jump_ranges";
+constexpr auto GUI_DOUBLE_JUMP_RANGES = "fast_aerial_trainer_gui_double_jump_ranges";
 constexpr auto GUI_DRAW_PITCH_HISTORY = "fast_aerial_trainer_gui_draw_pitch_history";
 constexpr auto GUI_DRAW_BOOST_HISTORY = "fast_aerial_trainer_gui_draw_boost_history";
 constexpr auto GUI_COLOR_HISTORY = "fast_aerial_trainer_gui_color_history";
@@ -29,8 +29,8 @@ constexpr auto GUI_SHOW_FIRST_INPUT_WARNING = "fast_aerial_trainer_gui_first_inp
 
 struct Range
 {
-	int min;
-	int max;
+	float min;
+	float max;
 	LinearColor* color;
 };
 
@@ -93,22 +93,18 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
 	LinearColor GuiColorFailure = LinearColor(255, 0, 0, 210);
-	std::vector<Range> JumpDuration_RangeList =
-	{
+	std::vector<Range> JumpDurationRanges = {
 		Range{ 0, 180, &GuiColorFailure },
 		Range{ 180, 195, &GuiColorWarning },
 		Range{ 195, 225, &GuiColorSuccess },
 		Range{ 225, 260, &GuiColorWarning },
-		Range{ 260, INT_MAX, &GuiColorFailure }
+		Range{ 260, 300, &GuiColorFailure }
 	};
-	int JumpDuration_HighestValue = 300;
-	std::vector<Range> DoubleJumpDuration_RangeList =
-	{
+	std::vector<Range> DoubleJumpDurationRanges = {
 		Range{ 0, 75, &GuiColorSuccess },
 		Range{ 75, 110, &GuiColorWarning },
-		Range{ 110, INT_MAX, &GuiColorFailure }
+		Range{ 110, 130, &GuiColorFailure }
 	};
-	int DoubleJumpDuration_HighestValue = 130;
 	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
 	bool GuiDrawPitchHistory = true;
 	bool GuiDrawBoostHistory = true;
@@ -124,10 +120,14 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	void OnTick(CarWrapper car, ControllerInput* input);
 
 	void RenderCanvas(CanvasWrapper canvas);
-	void DrawBar(CanvasWrapper& canvas, std::string text, float value, float maxValue, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
+	void DrawBar(CanvasWrapper& canvas, std::string text, float value, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
 	void DrawPitchHistory(CanvasWrapper& canvas);
 	void DrawBoostHistory(CanvasWrapper& canvas);
 	void RenderFirstInputWarning(CanvasWrapper& canvas);
+
+	std::vector<float> SplitString(std::string str);
+	std::vector<Range> BuildRanges(std::vector<float> values, std::vector<LinearColor*> colors);
+	std::string RangesToString(std::vector<Range> ranges);
 
 	virtual void onLoad();
 	virtual void onUnload();

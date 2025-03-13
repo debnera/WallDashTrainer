@@ -1,21 +1,24 @@
 #include "pch.h"
 #include "FastAerialTrainer.h"
 
-static bool ColorPicker(const char* label, LinearColor& color) {
+static bool ColorPicker(const char* label, LinearColor& color)
+{
 	LinearColor col = color / 255;
 	bool retVal = ImGui::ColorEdit4(label, &col.R, ImGuiColorEditFlags_AlphaBar);
 	color = col * 255;
 	return retVal;
 }
 
-static bool ColorPickerWithoutAlpha(const char* label, LinearColor& color) {
+static bool ColorPickerWithoutAlpha(const char* label, LinearColor& color)
+{
 	LinearColor col = color / 255;
 	bool retVal = ImGui::ColorEdit3(label, &col.R);
 	color = col * 255;
 	return retVal;
 }
 
-static bool PercentageSlider(const char* label, float& value, float max = 1.f) {
+static bool PercentageSlider(const char* label, float& value, float max = 1.f)
+{
 	float x = value * 100;
 	bool retVal = ImGui::SliderFloat(label, &x, 0, 100 * max, "%.1f %%");
 	value = x / 100;
@@ -38,10 +41,10 @@ void FastAerialTrainer::RenderSettings()
 	if (PercentageSlider("GUI Position Y", GuiPositionRelative.Y))
 		cvarManager->getCvar(GUI_POSITION_RELATIVE_Y).setValue(GuiPositionRelative.Y);
 
-	if (ImGui::SliderFloat("GUI Size", &GuiSize, 0, ScreenSize.X, "%.0f"))
+	if (ImGui::SliderFloat("GUI Size", &GuiSize, 0, ScreenSize.X, "%.0f pixels"))
 		cvarManager->getCvar(GUI_SIZE).setValue(GuiSize);
 	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("For clearest text use multiples of 350.");
+		ImGui::SetTooltip("For clearest text use multiples of 350 pixels.");
 
 	if (ColorPicker("Border and Text Color", GuiColorBorder))
 		cvarManager->getCvar(GUI_BORDER_COLOR).setValue(GuiColorBorder);
@@ -61,11 +64,90 @@ void FastAerialTrainer::RenderSettings()
 	if (ColorPicker("Failure Color", GuiColorFailure))
 		cvarManager->getCvar(GUI_COLOR_FAILURE).setValue(GuiColorFailure);
 
-	if (ImGui::DragInt("First Jump Hold - Highest Value", &JumpDuration_HighestValue, 1.f, 1, INT_MAX, "%d ms"))
-		cvarManager->getCvar(GUI_JUMP_MAX).setValue(JumpDuration_HighestValue);
+	float speed = 0.1f;
+	const char* format = "%.1f ms";
+	float width = 150;
+	float spacing = 20;
 
-	if (ImGui::DragInt("Time to Double Jump - Highest Value", &DoubleJumpDuration_HighestValue, 1.f, 1, INT_MAX, "%d ms"))
-		cvarManager->getCvar(GUI_DOUBLE_JUMP_MAX).setValue(DoubleJumpDuration_HighestValue);
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+	ImGui::Text("First Jump Timing");
+	ImGui::Spacing();
+	{
+		auto& ranges = JumpDurationRanges;
+		auto& cvar = GUI_JUMP_RANGES;
+		bool changed = false;
+		auto Input = [&](const char* label, float* value, float min, float max)
+			{
+				if (ImGui::DragFloat(label, value, speed, min, max, format))
+					changed = true;
+			};
+
+		ImGui::PushID("FirstJumpTiming");
+		ImGui::PushItemWidth(width);
+
+		ImGui::BeginGroup();
+		Input("Success Low", &ranges[1].max, ranges[0].max, ranges[2].max);
+		Input("Success High", &ranges[2].max, ranges[1].max, ranges[3].max);
+		ImGui::EndGroup(); ImGui::SameLine(0, spacing); ImGui::BeginGroup();
+		Input("Warning Low", &ranges[0].max, ranges[0].min, ranges[1].max);
+		Input("Warning High", &ranges[3].max, ranges[2].max, ranges[4].max);
+		ImGui::EndGroup(); ImGui::SameLine(0, spacing); ImGui::BeginGroup();
+		Input("Failure Low", &ranges[0].min, 0, ranges[0].max);
+		Input("Failure High", &ranges[4].max, ranges[3].max, FLT_MAX);
+		ImGui::EndGroup();
+
+		ImGui::Spacing();
+		if (ImGui::Button("Reset to default"))
+			cvarManager->getCvar(cvar).ResetToDefault();
+
+		ImGui::PopItemWidth();
+		ImGui::PopID();
+
+		if (changed)
+			cvarManager->getCvar(cvar).setValue(RangesToString(ranges));
+	}
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+	ImGui::Text("Double Jump Timing");
+	ImGui::Spacing();
+	{
+		auto& ranges = DoubleJumpDurationRanges;
+		auto& cvar = GUI_DOUBLE_JUMP_RANGES;
+		bool changed = false;
+		auto Input = [&](const char* label, float* value, float min, float max)
+			{
+				if (ImGui::DragFloat(label, value, speed, min, max, format))
+					changed = true;
+			};
+
+		ImGui::PushID("DoubleJumpTiming");
+		ImGui::PushItemWidth(width);
+
+		ImGui::BeginGroup();
+		Input("Success Low", &ranges[0].min, 0, ranges[0].max);
+		Input("Success High", &ranges[0].max, ranges[0].min, ranges[1].max);
+		ImGui::EndGroup(); ImGui::SameLine(0, spacing);	ImGui::BeginGroup();
+		Input("Warning High", &ranges[1].max, ranges[0].max, ranges[2].max);
+		ImGui::EndGroup(); ImGui::SameLine(0, spacing); ImGui::BeginGroup();
+		Input("Failure High", &ranges[2].max, ranges[1].max, FLT_MAX);
+		ImGui::EndGroup();
+
+		ImGui::Spacing();
+		if (ImGui::Button("Reset to default"))
+			cvarManager->getCvar(cvar).ResetToDefault();
+
+		ImGui::PopItemWidth();
+		ImGui::PopID();
+
+		if (changed)
+			cvarManager->getCvar(cvar).setValue(RangesToString(ranges));
+	}
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	if (ImGui::Checkbox("Draw Pitch History", &GuiDrawPitchHistory))
 		cvarManager->getCvar(GUI_DRAW_PITCH_HISTORY).setValue(GuiDrawPitchHistory);
