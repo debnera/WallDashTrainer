@@ -142,6 +142,8 @@ void FastAerialTrainer::RenderRangePicker(RangeList& rangeList, const char* cvar
 			rangeList.UpdateValue(i, value);
 			cvarManager->getCvar(cvar).setValue(rangeList.ValuesToString());
 		}
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Drag or ctrl-click to edit");
 	}
 
 	ImGui::Spacing();
