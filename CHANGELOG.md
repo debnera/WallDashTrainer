@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.5.0
+
+- Allow configuring timings
+- Show pitch down in history (as an option)
+- Also record inputs after dodging (to also see timings/inputs when backflipping)
+- Calculate pitch up amount only between jumps
+- Allow toggling different parts of the UI
+- Draw a backdrop behind to whole UI (fully opaque by default)
+- Show cvars in console
+
 ## 2.4.0
 
 - Split pitch and boost history

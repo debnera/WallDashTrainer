@@ -23,7 +23,7 @@ Faster is better.
 
 ### Pitch Up Amount
 
-Measures how good your pitch back input was. It takes into account aerial sensitivity.  
+Measures your pitch back input between leaving the ground and double-jumping. It takes into account aerial sensitivity.  
 Higher is better: 100% means you pitched upwards fully. 50% could mean you pitched back half for the whole duration or you pitched back fully for half the time.
 
 ### Pitch History
@@ -58,7 +58,6 @@ A nice training pack to check your progress on fast aerials is ["Fast Aerial Tes
 
 Having an issue with the plugin? Found a bug? Missing a feature?  
 Open a new issue on GitHub and I'll look into it.
-
 
 ## Changelog
 
