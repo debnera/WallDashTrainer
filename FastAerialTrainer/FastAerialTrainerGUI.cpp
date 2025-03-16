@@ -59,7 +59,7 @@ void FastAerialTrainer::RenderSettings()
 	if (ImGui::Checkbox("Show Double Jump Timing", &GuiShowDoubleJump))
 		cvarManager->getCvar(GUI_SHOW_DOUBLE_JUMP).setValue(GuiShowDoubleJump);
 
-	if (ImGui::Checkbox("Show Pitch Amount Text", &GuiShowPitchAmount))
+	if (ImGui::Checkbox("Show Pitch Up Amount Between Jumps", &GuiShowPitchAmount))
 		cvarManager->getCvar(GUI_SHOW_PITCH_AMOUNT).setValue(GuiShowPitchAmount);
 
 	if (ImGui::Checkbox("Draw Pitch History", &GuiShowPitchHistory))

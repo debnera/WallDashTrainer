@@ -60,10 +60,9 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	bool DoubleJumpPossible = false;
 	float DoubleJumpPressedTime = 0;
 	float TimeBetweenFirstAndDoubleJump = 0;
-	float HoldingJoystickBackDuration = 0;
-	float TotalRecordingDuration = 0;
+	float PitchUpBetweenJumps = 0;
+	float TicksBetweenJumps = 0;
 
-	float LastTickTime = 0;
 	std::vector<InputHistoryItem> InputHistory;
 
 	float TrainingStartTime = 0;

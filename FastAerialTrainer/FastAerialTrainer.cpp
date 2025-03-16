@@ -133,10 +133,9 @@ void FastAerialTrainer::onLoad()
 			DoubleJumpPossible = true;
 			DoubleJumpPressedTime = 0;
 			TimeBetweenFirstAndDoubleJump = 0;
-			TotalRecordingDuration = 0;
-			HoldingJoystickBackDuration = 0;
+			TicksBetweenJumps = 0;
+			PitchUpBetweenJumps = 0;
 
-			LastTickTime = now;
 			InputHistory.clear();
 		}
 	);
@@ -260,12 +259,14 @@ void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput* input)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
 		float intensity = std::clamp(sensitivity * input->Pitch, -1.f, 1.f);
-		float duration = now - LastTickTime;
-		HoldingJoystickBackDuration += intensity * duration;
-		TotalRecordingDuration += duration;
-		LastTickTime = now;
 
 		InputHistory.push_back({ intensity, (bool)input->HoldingBoost, (bool)input->Jumped });
+
+		if (DoubleJumpPossible)
+		{
+			TicksBetweenJumps += 1;
+			PitchUpBetweenJumps += intensity;
+		}
 	}
 }
 
@@ -314,8 +315,8 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	{
 		canvas.SetColor(GuiColorBorder);
 		canvas.SetPosition(position);
-		float JoystickBackDurationPercentage = !TotalRecordingDuration ? 0.f : 100.f * HoldingJoystickBackDuration / TotalRecordingDuration;
-		canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
+		float PitchUpBetweenJumpsAmount = TicksBetweenJumps == 0 ? 0 : PitchUpBetweenJumps / TicksBetweenJumps;
+		canvas.DrawString("Pitch Up Between Jumps: " + toPrecision(100 * PitchUpBetweenJumpsAmount, 1) + "%", FontSize(), FontSize());
 
 		position += Offset() * 0.6f;
 	}
