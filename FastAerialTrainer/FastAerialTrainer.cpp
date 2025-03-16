@@ -339,9 +339,12 @@ void FastAerialTrainer::DrawBar(
 	canvas.FillBox(Vector2F{ valueToPosition(value), barSize.Y });
 
 	// Draw separators
+	// `DrawBox()` always draws lines with width `2`.
+	// By offsetting the box by one pixel (half the line width), we avoid gaps and overlaps.
+	auto offset = 1;
 	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(barPos);
-	canvas.DrawBox(barSize);
+	canvas.SetPosition(barPos - offset);
+	canvas.DrawBox(barSize + (2 * offset));
 
 	std::set<float> values;
 	for (Range& range : colorRanges.GetRanges()) values.insert({ range.min, range.max });
@@ -350,8 +353,9 @@ void FastAerialTrainer::DrawBar(
 		if (minValue < value && value < maxValue)
 		{
 			canvas.SetColor(GuiColorBorder);
-			canvas.SetPosition(barPos + Vector2F{ valueToPosition(value), 0 });
-			canvas.FillBox(Vector2F{ 2, barSize.Y });
+			auto start = barPos + Vector2F{ valueToPosition(value), 0 };
+			auto end = start + Vector2F{ 0, barSize.Y };
+			canvas.DrawLine(start, end, 2); // Line width `2` to match `DrawBox()`.
 		}
 	}
 
