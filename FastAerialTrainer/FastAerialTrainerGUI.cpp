@@ -65,6 +65,9 @@ void FastAerialTrainer::RenderSettings()
 	if (ImGui::Checkbox("Draw Pitch History", &GuiShowPitchHistory))
 		cvarManager->getCvar(GUI_DRAW_PITCH_HISTORY).setValue(GuiShowPitchHistory);
 
+	if (ImGui::Checkbox("Show Pitch Down in History", &GuiShowPitchDownInHistory))
+		cvarManager->getCvar(GUI_SHOW_PITCH_DOWN_IN_HISTORY).setValue(GuiShowPitchDownInHistory);
+
 	if (ImGui::Checkbox("Draw Boost History", &GuiShowBoostHistory))
 		cvarManager->getCvar(GUI_DRAW_BOOST_HISTORY).setValue(GuiShowBoostHistory);
 

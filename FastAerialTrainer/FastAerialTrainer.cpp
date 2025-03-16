@@ -79,6 +79,7 @@ void FastAerialTrainer::onLoad()
 	registerBoolCvar(GUI_SHOW_DOUBLE_JUMP, GuiShowDoubleJump);
 	registerBoolCvar(GUI_SHOW_PITCH_AMOUNT, GuiShowPitchAmount);
 	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiShowPitchHistory);
+	registerBoolCvar(GUI_SHOW_PITCH_DOWN_IN_HISTORY, GuiShowPitchDownInHistory);
 	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiShowBoostHistory);
 	registerBoolCvar(GUI_SHOW_FIRST_INPUT_WARNING, GuiShowFirstInputWarning);
 	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
@@ -243,7 +244,7 @@ void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput* input)
 	if (DoubleJumpPossible || InAfterDoubleJumpRecording)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
-		float intensity = std::min(1.f, sensitivity * input->Pitch);
+		float intensity = std::clamp(sensitivity * input->Pitch, -1.f, 1.f);
 		float duration = now - LastTickTime;
 		HoldingJoystickBackDuration += intensity * duration;
 		TotalRecordingDuration += duration;
@@ -422,44 +423,101 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F positio
 	canvas.SetPosition(topLeft - borderWidth);
 	canvas.DrawBox(innerBoxSize + (2 * borderWidth));
 
-	int size = (int)InputHistory.size();
-	int i = 0;
-	InputHistoryItem previousInput{};
-	for (InputHistoryItem currentInput : InputHistory)
+	if (GuiShowPitchDownInHistory)
 	{
-		if (i > 0)
-		{
-			float startX = (float)(i - 1) / (size - 1);
-			float endX = (float)i / (size - 1);
-
-			float startY = 1.f - std::clamp(previousInput.pitch, 0.f, 1.f);
-			float endY = 1.f - std::clamp(currentInput.pitch, 0.f, 1.f);
-
-			// Draw a right triangle from `start` to `end` and a rectangle beneath it.
-			Vector2F start = innerBoxSize * Vector2F{ startX, startY };
-			Vector2F end = innerBoxSize * Vector2F{ endX, endY };
-			Vector2F base = start.Y > end.Y ? Vector2F{ end.X, start.Y } : Vector2F{ start.X, end.Y };
-
-			canvas.SetColor(GuiPitchHistoryColor); // Note: `FillTriangle` ignores transparency.
-			canvas.FillTriangle(base + topLeft, start + topLeft, end + topLeft);
-			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + topLeft);
-			canvas.FillBox(Vector2F{ end.X - start.X, innerBoxSize.Y - std::max(start.Y, end.Y) });
-		}
-		previousInput = currentInput;
-		i++;
+		canvas.SetColor(GuiColorBorder);
+		Vector2F start = topLeft - Vector2F{ borderWidth / 2.f, 0.f } + innerBoxSize * Vector2F{ 0.f, 0.5f };
+		Vector2F end = start + Vector2F{ borderWidth, 0.f } + innerBoxSize * Vector2F{ 1.f, 0.f };
+		canvas.DrawLine(start, end, borderWidth);
 	}
 
-	i = 0;
-	for (InputHistoryItem input : InputHistory)
-	{
-		if (input.jumped)
+	// Note: `FillTriangle` ignores transparency, so we can only use opaque colors here.
+	canvas.SetColor(GuiPitchHistoryColor);
+	auto FillTriangle = [&](Vector2F p1, Vector2F p2, Vector2F p3)
 		{
-			canvas.SetColor(GuiColorBorder);
-			Vector2F start = topLeft + Vector2F{ (float)i / size * innerBoxSize.X, 0.f };
-			Vector2F end = start + Vector2F{ 0, innerBoxSize.Y };
-			canvas.DrawLine(start, start + Vector2F{ 0,innerBoxSize.Y }, 2 * borderWidth);
+			canvas.FillTriangle(
+				p1 * innerBoxSize + topLeft,
+				p2 * innerBoxSize + topLeft,
+				p3 * innerBoxSize + topLeft
+			);
+		};
+	auto FillBox = [&](Vector2F p1, Vector2F p2)
+		{
+			canvas.SetPosition(p1 * innerBoxSize + topLeft);
+			canvas.FillBox((p2 - p1) * innerBoxSize);
+		};
+	int historySize = (int)InputHistory.size();
+	for (int i = 1; i < historySize; i++)
+	{
+		auto& previousInput = InputHistory[i - 1];
+		auto& currentInput = InputHistory[i];
+
+		// Which value should represent zero in the graph.
+		// All x,y values are between 0 and 1, where (0,0) is top left.
+		float zero;
+		float startX = (float)(i - 1) / (historySize - 1);
+		float endX = (float)i / (historySize - 1);
+		float startY;
+		float endY;
+
+		if (GuiShowPitchDownInHistory)
+		{
+			zero = 0.5f;
+			startY = 0.5f * (1.f - previousInput.pitch);
+			endY = 0.5f * (1.f - currentInput.pitch);
 		}
-		i++;
+		else
+		{
+			zero = 1.f;
+			startY = 1.f - std::clamp(previousInput.pitch, 0.f, 1.f);
+			endY = 1.f - std::clamp(currentInput.pitch, 0.f, 1.f);
+		}
+
+		Vector2F start = Vector2F{ startX, startY };
+		Vector2F end = Vector2F{ endX, endY };
+
+		if (startY < zero && endY < zero) // Above zero
+		{
+			// Draw a right triangle from `start` to `end` and a rectangle beneath it.
+			Vector2F base = startY > endY ? Vector2F{ endX, startY } : Vector2F{ startX, endY };
+
+			FillTriangle(base, start, end);
+			FillBox(Vector2F{ startX, std::max(startY, endY) }, Vector2F{ endX, zero });
+		}
+		else if (startY > zero && endY > zero) // Below zero
+		{
+			// Draw a right triangle from `start` to `end` and a rectangle above it.
+			Vector2F base = startY < endY ? Vector2F{ endX, startY } : Vector2F{ startX, endY };
+
+			FillTriangle(base, start, end);
+			FillBox(Vector2F{ startX, zero }, Vector2F{ endX, std::min(startY, endY) });
+		}
+		else // Through zero
+		{
+			// Draw two right triangles from `start` to `end`.
+			auto slope = (endY - startY) / (endX - startX);
+			auto centerX = startX + (zero - startY) / slope;
+
+			Vector2F baseLeft = Vector2F{ startX, zero };
+			Vector2F baseCenter = Vector2F{ centerX , zero };
+			Vector2F baseRight = Vector2F{ endX, zero };
+
+			FillTriangle(start, baseLeft, baseCenter);
+			FillTriangle(end, baseRight, baseCenter);
+		}
+	}
+
+	for (int i = 0; i < historySize; i++)
+	{
+		auto& input = InputHistory[i];
+
+		if (!input.jumped)
+			continue;
+
+		canvas.SetColor(GuiColorBorder);
+		Vector2F start = topLeft + Vector2F{ (float)i / historySize * innerBoxSize.X, 0.f };
+		Vector2F end = start + Vector2F{ 0, innerBoxSize.Y };
+		canvas.DrawLine(start, end, 2 * borderWidth);
 	}
 }
 

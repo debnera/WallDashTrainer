@@ -27,6 +27,7 @@ constexpr auto GUI_SHOW_FIRST_JUMP = "fast_aerial_trainer_gui_show_first_jump";
 constexpr auto GUI_SHOW_DOUBLE_JUMP = "fast_aerial_trainer_gui_show_double_jump";
 constexpr auto GUI_SHOW_PITCH_AMOUNT = "fast_aerial_trainer_gui_show_pitch_amount";
 constexpr auto GUI_DRAW_PITCH_HISTORY = "fast_aerial_trainer_gui_draw_pitch_history";
+constexpr auto GUI_SHOW_PITCH_DOWN_IN_HISTORY = "fast_aerial_trainer_gui_show_pitch_down_in_history";
 constexpr auto GUI_DRAW_BOOST_HISTORY = "fast_aerial_trainer_gui_draw_boost_history";
 constexpr auto GUI_SHOW_FIRST_INPUT_WARNING = "fast_aerial_trainer_gui_first_input_warning";
 
@@ -115,6 +116,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	bool GuiShowDoubleJump = true;
 	bool GuiShowPitchAmount = true;
 	bool GuiShowPitchHistory = true;
+	bool GuiShowPitchDownInHistory = false;
 	bool GuiShowBoostHistory = true;
 	bool GuiShowFirstInputWarning = true;
 
