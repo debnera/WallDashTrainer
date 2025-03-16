@@ -75,6 +75,9 @@
     <ClCompile Include="GuiBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RangeList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FastAerialTrainer.h">
@@ -135,6 +138,9 @@
       <Filter>imgui\headers</Filter>
     </ClInclude>
     <ClInclude Include="GuiBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RangeList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

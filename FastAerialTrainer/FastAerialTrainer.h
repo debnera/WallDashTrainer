@@ -3,6 +3,7 @@
 #include "GuiBase.h"
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "PersistentStorage.h"
+#include "RangeList.h"
 
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -25,41 +26,11 @@ constexpr auto GUI_DRAW_BOOST_HISTORY = "fast_aerial_trainer_gui_draw_boost_hist
 constexpr auto GUI_COLOR_HISTORY = "fast_aerial_trainer_gui_color_history";
 constexpr auto GUI_SHOW_FIRST_INPUT_WARNING = "fast_aerial_trainer_gui_first_input_warning";
 
-struct Range
-{
-	float min;
-	float max;
-	LinearColor* color;
-};
-
 struct InputHistoryItem
 {
 	float pitch;
 	bool boost;
 	bool jumped;
-};
-
-class RangeList
-{
-private:
-	std::vector<float> values;
-	std::vector<LinearColor*> colors;
-
-public:
-	RangeList(std::vector<float> values, std::vector<LinearColor*> colors);
-
-	void UpdateValues(std::vector<float> values);
-	void UpdateValue(int index, float value);
-	std::vector<Range> GetRanges();
-	std::vector<float> GetValues();
-
-	bool IsEmpty();
-	float GetTotalMin();
-	float GetTotalMax();
-	LinearColor* GetColorForValue(float value);
-
-	std::string ValuesToString();
-	static std::vector<float> SplitString(std::string str);
 };
 
 class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
