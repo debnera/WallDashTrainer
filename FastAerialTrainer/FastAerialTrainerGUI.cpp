@@ -25,6 +25,13 @@ static bool PercentageSlider(const char* label, float& value, float max = 1.f)
 	return retVal;
 }
 
+static void SpacedSeparator()
+{
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+}
+
 void FastAerialTrainer::RenderSettings()
 {
 	if (ImGui::Checkbox("Enable Plugin", &PluginEnabled))
@@ -64,93 +71,6 @@ void FastAerialTrainer::RenderSettings()
 	if (ColorPicker("Failure Color", GuiColorFailure))
 		cvarManager->getCvar(GUI_COLOR_FAILURE).setValue(GuiColorFailure);
 
-	float speed = 0.1f;
-	const char* format = "%.1f ms";
-	float width = 150;
-	float spacing = 20;
-
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	ImGui::Text("First Jump Timing");
-	ImGui::Spacing();
-	{
-		auto& rangeList = JumpDurationRanges;
-		auto& ranges = rangeList.GetRanges();
-		auto& cvar = GUI_JUMP_RANGES;
-		bool changed = false;
-		auto Input = [&](const char* label, float* value, float min, float max)
-			{
-				if (ImGui::DragFloat(label, value, speed, min, max, format))
-					changed = true;
-			};
-
-		ImGui::PushID("FirstJumpTiming");
-		ImGui::PushItemWidth(width);
-
-		ImGui::BeginGroup();
-		Input("Success Low", &ranges[1].max, ranges[0].max, ranges[2].max);
-		Input("Success High", &ranges[2].max, ranges[1].max, ranges[3].max);
-		ImGui::EndGroup(); ImGui::SameLine(0, spacing); ImGui::BeginGroup();
-		Input("Warning Low", &ranges[0].max, ranges[0].min, ranges[1].max);
-		Input("Warning High", &ranges[3].max, ranges[2].max, ranges[4].max);
-		ImGui::EndGroup(); ImGui::SameLine(0, spacing); ImGui::BeginGroup();
-		Input("Failure Low", &ranges[0].min, 0, ranges[0].max);
-		Input("Failure High", &ranges[4].max, ranges[3].max, FLT_MAX);
-		ImGui::EndGroup();
-
-		ImGui::Spacing();
-		if (ImGui::Button("Reset to default"))
-			cvarManager->getCvar(cvar).ResetToDefault();
-
-		ImGui::PopItemWidth();
-		ImGui::PopID();
-
-		if (changed)
-			cvarManager->getCvar(cvar).setValue(rangeList.ValuesToString());
-	}
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	ImGui::Text("Double Jump Timing");
-	ImGui::Spacing();
-	{
-		auto& rangeList = DoubleJumpDurationRanges;
-		auto& ranges = rangeList.GetRanges();
-		auto& cvar = GUI_DOUBLE_JUMP_RANGES;
-		bool changed = false;
-		auto Input = [&](const char* label, float* value, float min, float max)
-			{
-				if (ImGui::DragFloat(label, value, speed, min, max, format))
-					changed = true;
-			};
-
-		ImGui::PushID("DoubleJumpTiming");
-		ImGui::PushItemWidth(width);
-
-		ImGui::BeginGroup();
-		Input("Success Low", &ranges[0].min, 0, ranges[0].max);
-		Input("Success High", &ranges[0].max, ranges[0].min, ranges[1].max);
-		ImGui::EndGroup(); ImGui::SameLine(0, spacing);	ImGui::BeginGroup();
-		Input("Warning High", &ranges[1].max, ranges[0].max, ranges[2].max);
-		ImGui::EndGroup(); ImGui::SameLine(0, spacing); ImGui::BeginGroup();
-		Input("Failure High", &ranges[2].max, ranges[1].max, FLT_MAX);
-		ImGui::EndGroup();
-
-		ImGui::Spacing();
-		if (ImGui::Button("Reset to default"))
-			cvarManager->getCvar(cvar).ResetToDefault();
-
-		ImGui::PopItemWidth();
-		ImGui::PopID();
-
-		if (changed)
-			cvarManager->getCvar(cvar).setValue(rangeList.ValuesToString());
-	}
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
 	if (ImGui::Checkbox("Draw Pitch History", &GuiDrawPitchHistory))
 		cvarManager->getCvar(GUI_DRAW_PITCH_HISTORY).setValue(GuiDrawPitchHistory);
 
@@ -162,4 +82,71 @@ void FastAerialTrainer::RenderSettings()
 
 	if (ImGui::Checkbox("Show First Input Warning in Custom Training", &GuiShowFirstInputWarning))
 		cvarManager->getCvar(GUI_SHOW_FIRST_INPUT_WARNING).setValue(GuiShowFirstInputWarning);
+
+	SpacedSeparator();
+
+	ImGui::PushID("FirstJump");
+	ImGui::Text("First Jump Timing");
+	ImGui::Spacing();
+	RenderRangePicker(
+		JumpDurationRanges,
+		GUI_JUMP_RANGES,
+		{
+			"Failure Low",
+			"Warning Low",
+			"Success Low",
+			"Success High",
+			"Warning High",
+			"Failure High"
+		}
+	);
+	ImGui::PopID();
+
+	SpacedSeparator();
+
+	ImGui::PushID("DoubleJump");
+	ImGui::Text("Double Jump Timing");
+	ImGui::Spacing();
+	RenderRangePicker(
+		DoubleJumpDurationRanges,
+		GUI_DOUBLE_JUMP_RANGES,
+		{
+			"Success Low",
+			"Success High",
+			"Warning High",
+			"Failure High"
+		}
+	);
+	ImGui::PopID();
+}
+
+void FastAerialTrainer::RenderRangePicker(RangeList& rangeList, const char* cvar, std::vector<const char*> labels)
+{
+	float speed = 0.1f;
+	const char* format = "%.1f ms";
+	float width = 200;
+	float spacing = 20;
+
+	auto values = rangeList.GetValues();
+
+	ImGui::PushItemWidth(width);
+
+	for (int i = 0; i < labels.size(); i++)
+	{
+		float value = values[i];
+		float min = i - 1 < 0 ? 0 : values[i - 1];
+		float max = i + 1 >= values.size() ? FLT_MAX : values[i + 1];
+
+		if (ImGui::DragFloat(labels[i], &value, speed, min, max, format))
+		{
+			rangeList.UpdateValue(i, value);
+			cvarManager->getCvar(cvar).setValue(rangeList.ValuesToString());
+		}
+	}
+
+	ImGui::Spacing();
+	if (ImGui::Button("Reset to default"))
+		cvarManager->getCvar(cvar).ResetToDefault();
+
+	ImGui::PopItemWidth();
 }

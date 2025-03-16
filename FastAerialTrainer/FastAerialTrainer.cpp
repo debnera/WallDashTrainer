@@ -293,11 +293,11 @@ void FastAerialTrainer::DrawBar(
 	LinearColor backgroundColor, RangeList& colorRanges
 )
 {
-	if (colorRanges.GetRanges().empty())
+	if (colorRanges.IsEmpty())
 		return;
 
-	float minValue = colorRanges.GetRanges().front().min;
-	float maxValue = colorRanges.GetRanges().back().max;
+	float minValue = colorRanges.GetTotalMin();
+	float maxValue = colorRanges.GetTotalMax();
 	auto valueToPosition = [&](float value)
 		{
 			auto ratio = (value - minValue) / (maxValue - minValue);
@@ -323,18 +323,7 @@ void FastAerialTrainer::DrawBar(
 	}
 
 	// Draw colored bar
-	if (value < minValue)
-		canvas.SetColor(*colorRanges.GetRanges().front().color);
-	else if (value >= maxValue)
-		canvas.SetColor(*colorRanges.GetRanges().back().color);
-	else
-	{
-		for (Range& range : colorRanges.GetRanges())
-		{
-			if (range.min <= value && value < range.max)
-				canvas.SetColor(*range.color);
-		}
-	}
+	canvas.SetColor(*colorRanges.GetColorForValue(value));
 	canvas.SetPosition(barPos);
 	canvas.FillBox(Vector2F{ valueToPosition(value), barSize.Y });
 
@@ -346,17 +335,16 @@ void FastAerialTrainer::DrawBar(
 	canvas.SetPosition(barPos - offset);
 	canvas.DrawBox(barSize + (2 * offset));
 
-	std::set<float> values;
-	for (Range& range : colorRanges.GetRanges()) values.insert({ range.min, range.max });
-	for (float value : values)
+	auto values = colorRanges.GetValues();
+	std::set<float> uniqueValues = std::set<float>(values.begin(), values.end());
+	for (float value : uniqueValues)
 	{
-		if (minValue < value && value < maxValue)
-		{
-			canvas.SetColor(GuiColorBorder);
-			auto start = barPos + Vector2F{ valueToPosition(value), 0 };
-			auto end = start + Vector2F{ 0, barSize.Y };
-			canvas.DrawLine(start, end, 2); // Line width `2` to match `DrawBox()`.
-		}
+		if (value <= minValue || maxValue <= value) continue;
+
+		auto start = barPos + Vector2F{ valueToPosition(value), 0 };
+		auto end = start + Vector2F{ 0, barSize.Y };
+		canvas.SetColor(GuiColorBorder);
+		canvas.DrawLine(start, end, 2); // Line width `2` to match `DrawBox()`.
 	}
 
 	// Draw text
@@ -494,9 +482,38 @@ void FastAerialTrainer::onUnload()
 RangeList::RangeList(std::vector<float> values, std::vector<LinearColor*> colors)
 {
 	if (colors.size() != values.size() - 1)
+	{
 		LOG("Constructing RangeList: Number of values and colors don't match!");
+		return;
+	}
 
-	for (int i = 0; i < std::min(colors.size(), values.size() - 1); i++)
+	this->values = values;
+	this->colors = colors;
+}
+void RangeList::UpdateValues(std::vector<float> values)
+{
+	if (values.size() != this->values.size())
+	{
+		LOG("Updating RangeList: Number of values don't match!");
+		return;
+	}
+
+	this->values = values;
+}
+void RangeList::UpdateValue(int index, float value)
+{
+	if (index < 0 || index >= values.size()) return;
+
+	float prevValue = index - 1 < 0 ? FLT_MIN : values[index - 1];
+	float nextValue = index + 1 >= values.size() ? FLT_MAX : values[index + 1];
+
+	values[index] = std::clamp(value, prevValue, nextValue);
+}
+std::vector<Range> RangeList::GetRanges()
+{
+	std::vector<Range> ranges;
+
+	for (int i = 0; i < colors.size(); i++)
 	{
 		ranges.push_back(
 			{
@@ -506,33 +523,48 @@ RangeList::RangeList(std::vector<float> values, std::vector<LinearColor*> colors
 			}
 		);
 	}
-}
 
-void RangeList::UpdateValues(std::vector<float> values)
-{
-	auto size = std::min(values.size(), ranges.size() + 1);
-	for (int i = 0; i < size; i++)
-	{
-		if (i > 0) ranges[i - 1].max = values[i];
-		if (i < size - 1) ranges[i].min = values[i];
-	}
-}
-std::vector<Range>& RangeList::GetRanges()
-{
 	return ranges;
 }
+std::vector<float> RangeList::GetValues()
+{
+	return values;
+}
+bool RangeList::IsEmpty()
+{
+	return colors.empty();
+}
+float RangeList::GetTotalMin()
+{
+	if (values.empty()) return 0;
+	return values.front();
+}
+float RangeList::GetTotalMax()
+{
+	if (values.empty()) return FLT_MAX;
+	return values.back();
+}
+LinearColor* RangeList::GetColorForValue(float value)
+{
+	if (IsEmpty())
+		return nullptr;
 
+	for (int i = 1; i < values.size(); i++)
+	{
+		if (value < values[i])
+			return colors[i - 1];
+	}
+	return colors.back();
+}
 std::string RangeList::ValuesToString()
 {
 	std::string result;
 
-	if (ranges.empty())
-		return result;
-
-	result = std::to_string(ranges[0].min);
-
-	for (auto& range : ranges)
-		result += "," + std::to_string(range.max);
+	for (int i = 0; i < values.size(); i++)
+	{
+		if (i > 0) result += ",";
+		result += std::to_string(values[i]);
+	}
 
 	return result;
 }
@@ -543,7 +575,9 @@ std::vector<float> RangeList::SplitString(std::string str)
 	std::string value;
 
 	while (std::getline(stream, value, ','))
+	{
 		values.push_back(strtof(value.c_str(), NULL));
+	}
 
 	return values;
 }

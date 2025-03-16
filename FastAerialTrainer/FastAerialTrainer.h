@@ -2,8 +2,6 @@
 
 #include "GuiBase.h"
 #include "bakkesmod/plugin/bakkesmodplugin.h"
-#include "bakkesmod/plugin/pluginwindow.h"
-#include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "PersistentStorage.h"
 
 #include "version.h"
@@ -44,18 +42,21 @@ struct InputHistoryItem
 class RangeList
 {
 private:
-	std::vector<Range> ranges;
-	// total min,max
-	// get color (or range) for value
-	// make sure it's always ordered
-	// iterate ranges
-	// get all stops (no duplicates)
+	std::vector<float> values;
+	std::vector<LinearColor*> colors;
 
 public:
 	RangeList(std::vector<float> values, std::vector<LinearColor*> colors);
 
 	void UpdateValues(std::vector<float> values);
-	std::vector<Range>& GetRanges();
+	void UpdateValue(int index, float value);
+	std::vector<Range> GetRanges();
+	std::vector<float> GetValues();
+
+	bool IsEmpty();
+	float GetTotalMin();
+	float GetTotalMax();
+	LinearColor* GetColorForValue(float value);
 
 	std::string ValuesToString();
 	static std::vector<float> SplitString(std::string str);
@@ -155,4 +156,5 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	virtual void onUnload();
 
 	void RenderSettings() override;
+	void RenderRangePicker(RangeList& rangeList, const char* cvar, std::vector<const char*> labels);
 };
