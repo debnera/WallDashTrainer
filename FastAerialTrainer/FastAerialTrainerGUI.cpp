@@ -74,8 +74,11 @@ void FastAerialTrainer::RenderSettings()
 	if (ColorPicker("Border and Text Color", GuiColorBorder))
 		cvarManager->getCvar(GUI_BORDER_COLOR).setValue(GuiColorBorder);
 
-	if (ColorPicker("Background Color", GuiColorBackground))
+	if (ColorPicker("Bar Background Color", GuiColorBackground))
 		cvarManager->getCvar(GUI_BACKGROUND_COLOR).setValue(GuiColorBackground);
+
+	if (ColorPicker("Backdrop Color", GuiColorBackdrop))
+		cvarManager->getCvar(GUI_BACKDROP_COLOR).setValue(GuiColorBackdrop);
 
 	if (PercentageSlider("Color Preview Opacity", GuiColorPreviewOpacity, 0.5))
 		cvarManager->getCvar(GUI_PREVIEW_OPACTIY).setValue(GuiColorPreviewOpacity);

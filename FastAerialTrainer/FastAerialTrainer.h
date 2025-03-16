@@ -15,6 +15,7 @@ constexpr auto GUI_POSITION_RELATIVE_Y = "fast_aerial_trainer_gui_pos_rel_y";
 constexpr auto GUI_SIZE = "fast_aerial_trainer_gui_size";
 constexpr auto GUI_BORDER_COLOR = "fast_aerial_trainer_gui_border_color";
 constexpr auto GUI_BACKGROUND_COLOR = "fast_aerial_trainer_gui_background_color";
+constexpr auto GUI_BACKDROP_COLOR = "fast_aerial_trainer_gui_backdrop_color";
 constexpr auto GUI_PREVIEW_OPACTIY = "fast_aerial_trainer_gui_preview_opacity";
 constexpr auto GUI_COLOR_SUCCESS = "fast_aerial_trainer_gui_color_success";
 constexpr auto GUI_COLOR_WARNING = "fast_aerial_trainer_gui_color_warning";
@@ -72,6 +73,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	Vector2F GuiPositionRelative = { 0.5, 0.01 };
 	Vector2 ScreenSize = { 1920, 1080 };
 	float GuiSize = 700;
+	float GuiHeight = 0; // dynamically computed
 	Vector2F BarSize() { return { GuiSize, GuiSize / 24.f }; }
 	Vector2F Offset() { return { 0, GuiSize / 10.f }; }
 	float FontSize() { return GuiSize / 350.f; }
@@ -84,7 +86,8 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	}
 	float GuiColorPreviewOpacity = 0.2f;
 	LinearColor GuiColorBorder = LinearColor(255, 255, 255, 255);
-	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 128);
+	LinearColor GuiColorBackground = LinearColor(255, 255, 255, 127);
+	LinearColor GuiColorBackdrop = LinearColor(127, 127, 127, 0);
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
 	LinearColor GuiColorFailure = LinearColor(255, 0, 0, 210);
@@ -128,7 +131,6 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	void DrawBar(CanvasWrapper& canvas, std::string text, float value, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, RangeList& colorRanges);
 	void DrawPitchHistory(CanvasWrapper& canvas, Vector2F position);
 	void DrawBoostHistory(CanvasWrapper& canvas, Vector2F position);
-	void RenderFirstInputWarning(CanvasWrapper& canvas, Vector2F position);
 
 	virtual void onLoad();
 	virtual void onUnload();

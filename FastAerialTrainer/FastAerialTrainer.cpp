@@ -83,6 +83,7 @@ void FastAerialTrainer::onLoad()
 	registerBoolCvar(GUI_SHOW_FIRST_INPUT_WARNING, GuiShowFirstInputWarning);
 	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
 	registerColorCvar(GUI_BACKGROUND_COLOR, GuiColorBackground);
+	registerColorCvar(GUI_BACKDROP_COLOR, GuiColorBackdrop);
 	registerColorCvar(GUI_COLOR_SUCCESS, GuiColorSuccess);
 	registerColorCvar(GUI_COLOR_WARNING, GuiColorWarning);
 	registerColorCvar(GUI_COLOR_FAILURE, GuiColorFailure);
@@ -265,6 +266,14 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 
 	Vector2F position = GuiPosition();
 
+	{
+		Vector2F margin = { 0.02f, 0.04f };
+		Vector2F size = Vector2F{ GuiSize, GuiHeight };
+		canvas.SetPosition(position - (size * margin));
+		canvas.SetColor(GuiColorBackdrop);
+		canvas.FillBox(size * ((margin * 2.f) + 1.f));
+	}
+
 	if (GuiShowFirstJump)
 	{
 		DrawBar(
@@ -307,10 +316,16 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 		position += Offset() * 0.6f;
 	}
 
-	if (GuiShowFirstInputWarning)
+	if (GuiShowFirstInputWarning && gameWrapper->IsInCustomTraining() && TrainingStartTime < HoldFirstJumpStartTime)
 	{
-		RenderFirstInputWarning(canvas, position);
+		canvas.SetColor(GuiColorBorder);
+		canvas.SetPosition(position);
+		canvas.DrawString("Jump was not first input!", FontSize(), FontSize());
+
+		position += Offset() * 0.6f;
 	}
+
+	GuiHeight = position.Y - GuiPosition().Y;
 }
 
 void FastAerialTrainer::DrawBar(
@@ -481,16 +496,6 @@ void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas, Vector2F positio
 		}
 		i++;
 	}
-}
-
-void FastAerialTrainer::RenderFirstInputWarning(CanvasWrapper& canvas, Vector2F position)
-{
-	if (!gameWrapper->IsInCustomTraining()) return;
-	if (TrainingStartTime >= HoldFirstJumpStartTime) return;
-
-	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(position);
-	canvas.DrawString("Jump was not first input!", FontSize(), FontSize());
 }
 
 void FastAerialTrainer::onUnload()
