@@ -41,6 +41,26 @@ struct InputHistoryItem
 	bool jumped;
 };
 
+class RangeList
+{
+private:
+	std::vector<Range> ranges;
+	// total min,max
+	// get color (or range) for value
+	// make sure it's always ordered
+	// iterate ranges
+	// get all stops (no duplicates)
+
+public:
+	RangeList(std::vector<float> values, std::vector<LinearColor*> colors);
+
+	void UpdateValues(std::vector<float> values);
+	std::vector<Range>& GetRanges();
+
+	std::string ValuesToString();
+	static std::vector<float> SplitString(std::string str);
+};
+
 class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
 {
 	std::shared_ptr<PersistentStorage> persistentStorage;
@@ -93,18 +113,24 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	LinearColor GuiColorSuccess = LinearColor(0, 0, 255, 210);
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
 	LinearColor GuiColorFailure = LinearColor(255, 0, 0, 210);
-	std::vector<Range> JumpDurationRanges = {
-		Range{ 0, 180, &GuiColorFailure },
-		Range{ 180, 195, &GuiColorWarning },
-		Range{ 195, 225, &GuiColorSuccess },
-		Range{ 225, 260, &GuiColorWarning },
-		Range{ 260, 300, &GuiColorFailure }
-	};
-	std::vector<Range> DoubleJumpDurationRanges = {
-		Range{ 0, 75, &GuiColorSuccess },
-		Range{ 75, 110, &GuiColorWarning },
-		Range{ 110, 130, &GuiColorFailure }
-	};
+	RangeList JumpDurationRanges = RangeList(
+		{ 0, 180, 195, 225, 260, 300 },
+		{
+			 &GuiColorFailure,
+			 &GuiColorWarning,
+			 &GuiColorSuccess,
+			 &GuiColorWarning,
+			 &GuiColorFailure
+		}
+	);
+	RangeList DoubleJumpDurationRanges = RangeList(
+		{ 0, 75, 110, 130 },
+		{
+			 &GuiColorSuccess,
+			 &GuiColorWarning,
+			 &GuiColorFailure
+		}
+	);
 	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
 	bool GuiDrawPitchHistory = true;
 	bool GuiDrawBoostHistory = true;
@@ -120,14 +146,10 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 	void OnTick(CarWrapper car, ControllerInput* input);
 
 	void RenderCanvas(CanvasWrapper canvas);
-	void DrawBar(CanvasWrapper& canvas, std::string text, float value, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, std::vector<Range>& colorRanges);
+	void DrawBar(CanvasWrapper& canvas, std::string text, float value, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, RangeList& colorRanges);
 	void DrawPitchHistory(CanvasWrapper& canvas);
 	void DrawBoostHistory(CanvasWrapper& canvas);
 	void RenderFirstInputWarning(CanvasWrapper& canvas);
-
-	std::vector<float> SplitString(std::string str);
-	std::vector<Range> BuildRanges(std::vector<float> values, std::vector<LinearColor*> colors);
-	std::string RangesToString(std::vector<Range> ranges);
 
 	virtual void onLoad();
 	virtual void onUnload();

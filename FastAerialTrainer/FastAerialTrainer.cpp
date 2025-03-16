@@ -26,47 +26,6 @@ static std::string to_string(LinearColor col)
 		+ std::to_string((int)col.A) + ")";
 }
 
-std::vector<float> FastAerialTrainer::SplitString(std::string str)
-{
-	std::vector<float> values;
-	std::istringstream stream(str);
-	std::string value;
-
-	while (std::getline(stream, value, ','))
-		values.push_back(strtof(value.c_str(), NULL));
-
-	return values;
-};
-std::vector<Range> FastAerialTrainer::BuildRanges(std::vector<float> values, std::vector<LinearColor*> colors)
-{
-	std::vector<Range> ranges;
-
-	for (int i = 0; i < std::min(colors.size(), values.size() - 1); i++)
-	{
-		ranges.push_back({
-			.min = values[i],
-			.max = values[i + 1],
-			.color = colors[i]
-			});
-	}
-
-	return ranges;
-};
-std::string FastAerialTrainer::RangesToString(std::vector<Range> ranges)
-{
-	std::string result;
-
-	if (ranges.empty())
-		return result;
-
-	result = std::to_string(ranges[0].min);
-
-	for (auto& range : ranges)
-		result += "," + std::to_string(range.max);
-
-	return result;
-};
-
 void FastAerialTrainer::onLoad()
 {
 	// This line is required for `LOG` to work and must be before any use of `LOG()`.
@@ -115,31 +74,17 @@ void FastAerialTrainer::onLoad()
 	registerColorCvar(GUI_COLOR_WARNING, GuiColorWarning);
 	registerColorCvar(GUI_COLOR_FAILURE, GuiColorFailure);
 	registerColorCvar(GUI_COLOR_HISTORY, GuiPitchHistoryColor);
-	persistentStorage->RegisterPersistentCvar(GUI_JUMP_RANGES, RangesToString(JumpDurationRanges), "", false)
+	persistentStorage->RegisterPersistentCvar(GUI_JUMP_RANGES, JumpDurationRanges.ValuesToString(), "", false)
 		.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
 			{
-				JumpDurationRanges = BuildRanges(
-					SplitString(cvar.getStringValue()),
-					{
-						&GuiColorFailure,
-						&GuiColorWarning,
-						&GuiColorSuccess,
-						&GuiColorWarning,
-						&GuiColorFailure
-					}
-				);
+				auto values = RangeList::SplitString(cvar.getStringValue());
+				JumpDurationRanges.UpdateValues(values);
 			});
-	persistentStorage->RegisterPersistentCvar(GUI_DOUBLE_JUMP_RANGES, RangesToString(DoubleJumpDurationRanges), "", false)
+	persistentStorage->RegisterPersistentCvar(GUI_DOUBLE_JUMP_RANGES, DoubleJumpDurationRanges.ValuesToString(), "", false)
 		.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
 			{
-				DoubleJumpDurationRanges = BuildRanges(
-					SplitString(cvar.getStringValue()),
-					{
-						&GuiColorSuccess,
-						&GuiColorWarning,
-						&GuiColorFailure
-					}
-				);
+				auto values = RangeList::SplitString(cvar.getStringValue());
+				DoubleJumpDurationRanges.UpdateValues(values);
 			});
 
 	gameWrapper->RegisterDrawable(
@@ -345,14 +290,14 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 void FastAerialTrainer::DrawBar(
 	CanvasWrapper& canvas, std::string text, float value,
 	Vector2F barPos, Vector2F barSize,
-	LinearColor backgroundColor, std::vector<Range>& colorRanges
+	LinearColor backgroundColor, RangeList& colorRanges
 )
 {
-	if (colorRanges.empty())
+	if (colorRanges.GetRanges().empty())
 		return;
 
-	float minValue = colorRanges.front().min;
-	float maxValue = colorRanges.back().max;
+	float minValue = colorRanges.GetRanges().front().min;
+	float maxValue = colorRanges.GetRanges().back().max;
 	auto valueToPosition = [&](float value)
 		{
 			auto ratio = (value - minValue) / (maxValue - minValue);
@@ -364,7 +309,7 @@ void FastAerialTrainer::DrawBar(
 	canvas.SetColor(backgroundColor);
 	canvas.FillBox(barSize);
 
-	for (Range& range : colorRanges)
+	for (Range& range : colorRanges.GetRanges())
 	{
 		LinearColor preview = *range.color;
 		preview.A *= GuiColorPreviewOpacity;
@@ -379,12 +324,12 @@ void FastAerialTrainer::DrawBar(
 
 	// Draw colored bar
 	if (value < minValue)
-		canvas.SetColor(*colorRanges.front().color);
+		canvas.SetColor(*colorRanges.GetRanges().front().color);
 	else if (value >= maxValue)
-		canvas.SetColor(*colorRanges.back().color);
+		canvas.SetColor(*colorRanges.GetRanges().back().color);
 	else
 	{
-		for (Range& range : colorRanges)
+		for (Range& range : colorRanges.GetRanges())
 		{
 			if (range.min <= value && value < range.max)
 				canvas.SetColor(*range.color);
@@ -399,7 +344,7 @@ void FastAerialTrainer::DrawBar(
 	canvas.DrawBox(barSize);
 
 	std::set<float> values;
-	for (Range& range : colorRanges) values.insert({ range.min, range.max });
+	for (Range& range : colorRanges.GetRanges()) values.insert({ range.min, range.max });
 	for (float value : values)
 	{
 		if (minValue < value && value < maxValue)
@@ -540,4 +485,61 @@ void FastAerialTrainer::RenderFirstInputWarning(CanvasWrapper& canvas)
 void FastAerialTrainer::onUnload()
 {
 	// nothing to unload...
+}
+
+RangeList::RangeList(std::vector<float> values, std::vector<LinearColor*> colors)
+{
+	if (colors.size() != values.size() - 1)
+		LOG("Constructing RangeList: Number of values and colors don't match!");
+
+	for (int i = 0; i < std::min(colors.size(), values.size() - 1); i++)
+	{
+		ranges.push_back(
+			{
+				.min = values[i],
+				.max = values[i + 1],
+				.color = colors[i]
+			}
+		);
+	}
+}
+
+void RangeList::UpdateValues(std::vector<float> values)
+{
+	auto size = std::min(values.size(), ranges.size() + 1);
+	for (int i = 0; i < size; i++)
+	{
+		if (i > 0) ranges[i - 1].max = values[i];
+		if (i < size - 1) ranges[i].min = values[i];
+	}
+}
+std::vector<Range>& RangeList::GetRanges()
+{
+	return ranges;
+}
+
+std::string RangeList::ValuesToString()
+{
+	std::string result;
+
+	if (ranges.empty())
+		return result;
+
+	result = std::to_string(ranges[0].min);
+
+	for (auto& range : ranges)
+		result += "," + std::to_string(range.max);
+
+	return result;
+}
+std::vector<float> RangeList::SplitString(std::string str)
+{
+	std::vector<float> values;
+	std::istringstream stream(str);
+	std::string value;
+
+	while (std::getline(stream, value, ','))
+		values.push_back(strtof(value.c_str(), NULL));
+
+	return values;
 }

@@ -75,7 +75,8 @@ void FastAerialTrainer::RenderSettings()
 	ImGui::Text("First Jump Timing");
 	ImGui::Spacing();
 	{
-		auto& ranges = JumpDurationRanges;
+		auto& rangeList = JumpDurationRanges;
+		auto& ranges = rangeList.GetRanges();
 		auto& cvar = GUI_JUMP_RANGES;
 		bool changed = false;
 		auto Input = [&](const char* label, float* value, float min, float max)
@@ -106,7 +107,7 @@ void FastAerialTrainer::RenderSettings()
 		ImGui::PopID();
 
 		if (changed)
-			cvarManager->getCvar(cvar).setValue(RangesToString(ranges));
+			cvarManager->getCvar(cvar).setValue(rangeList.ValuesToString());
 	}
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -114,7 +115,8 @@ void FastAerialTrainer::RenderSettings()
 	ImGui::Text("Double Jump Timing");
 	ImGui::Spacing();
 	{
-		auto& ranges = DoubleJumpDurationRanges;
+		auto& rangeList = DoubleJumpDurationRanges;
+		auto& ranges = rangeList.GetRanges();
 		auto& cvar = GUI_DOUBLE_JUMP_RANGES;
 		bool changed = false;
 		auto Input = [&](const char* label, float* value, float min, float max)
@@ -143,7 +145,7 @@ void FastAerialTrainer::RenderSettings()
 		ImGui::PopID();
 
 		if (changed)
-			cvarManager->getCvar(cvar).setValue(RangesToString(ranges));
+			cvarManager->getCvar(cvar).setValue(rangeList.ValuesToString());
 	}
 	ImGui::Spacing();
 	ImGui::Separator();
