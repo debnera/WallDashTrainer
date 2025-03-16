@@ -2,6 +2,7 @@
 #include "FastAerialTrainer.h"
 
 #include <sstream>
+#include <set>
 
 
 BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINTYPE_FREEPLAY);
@@ -34,28 +35,38 @@ void FastAerialTrainer::onLoad()
 
 	auto registerIntCvar = [this](std::string label, int& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getIntValue(); });
 		};
 	auto registerFloatCvar = [this](std::string label, float& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getFloatValue(); });
 		};
 	auto registerPercentCvar = [this](std::string label, float& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false, true, 0.0f, true, 1.0f)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true, true, 0.0f, true, 1.0f)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getFloatValue(); });
 		};
 	auto registerBoolCvar = [this](std::string label, bool& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getBoolValue(); });
 		};
 	auto registerColorCvar = [this](std::string label, LinearColor& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getColorValue(); });
+		};
+	auto registerRangeListCvar = [this](std::string label, RangeList& rangeList)
+		{
+			persistentStorage->RegisterPersistentCvar(label, rangeList.ValuesToString(), "", true)
+				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
+					{
+						auto values = RangeList::SplitString(cvar.getStringValue());
+						rangeList.UpdateValues(values);
+					}
+				);
 		};
 
 	registerBoolCvar(PLUGIN_ENABLED, PluginEnabled);
@@ -63,19 +74,23 @@ void FastAerialTrainer::onLoad()
 	registerPercentCvar(GUI_POSITION_RELATIVE_X, GuiPositionRelative.X);
 	registerPercentCvar(GUI_POSITION_RELATIVE_Y, GuiPositionRelative.Y);
 	registerFloatCvar(GUI_SIZE, GuiSize);
-	registerIntCvar(GUI_JUMP_MAX, JumpDuration_HighestValue);
-	registerIntCvar(GUI_DOUBLE_JUMP_MAX, DoubleJumpDuration_HighestValue);
 	registerPercentCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
-	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiDrawPitchHistory);
-	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiDrawBoostHistory);
+	registerBoolCvar(GUI_SHOW_FIRST_JUMP, GuiShowFirstJump);
+	registerBoolCvar(GUI_SHOW_DOUBLE_JUMP, GuiShowDoubleJump);
+	registerBoolCvar(GUI_SHOW_PITCH_AMOUNT, GuiShowPitchAmount);
+	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiShowPitchHistory);
+	registerBoolCvar(GUI_SHOW_PITCH_DOWN_IN_HISTORY, GuiShowPitchDownInHistory);
+	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiShowBoostHistory);
 	registerBoolCvar(GUI_SHOW_FIRST_INPUT_WARNING, GuiShowFirstInputWarning);
 	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
 	registerColorCvar(GUI_BACKGROUND_COLOR, GuiColorBackground);
+	registerColorCvar(GUI_BACKDROP_COLOR, GuiColorBackdrop);
 	registerColorCvar(GUI_COLOR_SUCCESS, GuiColorSuccess);
 	registerColorCvar(GUI_COLOR_WARNING, GuiColorWarning);
 	registerColorCvar(GUI_COLOR_FAILURE, GuiColorFailure);
 	registerColorCvar(GUI_COLOR_HISTORY, GuiPitchHistoryColor);
-
+	registerRangeListCvar(GUI_JUMP_RANGES, JumpDurationRanges);
+	registerRangeListCvar(GUI_DOUBLE_JUMP_RANGES, DoubleJumpDurationRanges);
 
 	gameWrapper->RegisterDrawable(
 		[this](CanvasWrapper canvas)
@@ -118,18 +133,14 @@ void FastAerialTrainer::onLoad()
 			DoubleJumpPossible = true;
 			DoubleJumpPressedTime = 0;
 			TimeBetweenFirstAndDoubleJump = 0;
-			TotalRecordingDuration = 0;
-			HoldingJoystickBackDuration = 0;
+			TicksBetweenJumps = 0;
+			PitchUpBetweenJumps = 0;
 
-			LastTickTime = now;
 			InputHistory.clear();
 		}
 	);
 
-	// Double jump
-	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
-		"Function CarComponent_DoubleJump_TA.Active.BeginState",
-		[this](CarComponentWrapper component, void* params, std::string eventName)
+	auto OnSecondJump = [this](CarComponentWrapper component)
 		{
 			if (IsInReplay || !IsActive()) return;
 			if (!IsLocalCar(component.GetCar())) return;
@@ -139,6 +150,24 @@ void FastAerialTrainer::onLoad()
 				DoubleJumpPressedTime = GetCurrentTime();
 
 			DoubleJumpPossible = false;
+		};
+
+	// Double jump
+	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
+		"Function CarComponent_DoubleJump_TA.Active.BeginState",
+		[this, OnSecondJump](CarComponentWrapper component, ...)
+		{
+			OnSecondJump(component);
+		}
+	);
+
+	// Dodge
+	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
+		"Function CarComponent_Dodge_TA.Active.BeginState",
+		[this, OnSecondJump](CarComponentWrapper component, ...)
+		{
+			// Treat dodging the same as double-jumping, since players might dodge by accident.
+			OnSecondJump(component);
 		}
 	);
 
@@ -229,13 +258,15 @@ void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput* input)
 	if (DoubleJumpPossible || InAfterDoubleJumpRecording)
 	{
 		float sensitivity = gameWrapper->GetSettings().GetGamepadSettings().AirControlSensitivity;
-		float intensity = std::min(1.f, sensitivity * input->Pitch);
-		float duration = now - LastTickTime;
-		HoldingJoystickBackDuration += intensity * duration;
-		TotalRecordingDuration += duration;
-		LastTickTime = now;
+		float intensity = std::clamp(sensitivity * input->Pitch, -1.f, 1.f);
 
 		InputHistory.push_back({ intensity, (bool)input->HoldingBoost, (bool)input->Jumped });
+
+		if (DoubleJumpPossible)
+		{
+			TicksBetweenJumps += 1;
+			PitchUpBetweenJumps += intensity;
+		}
 	}
 }
 
@@ -250,79 +281,128 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
 	ScreenSize = canvas.GetSize();
 
-	DrawBar(
-		canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000, (float)JumpDuration_HighestValue,
-		GuiPosition(), BarSize(),
-		GuiColorBackground, JumpDuration_RangeList
-	);
+	Vector2F position = GuiPosition();
 
-	DrawBar(
-		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000, (float)DoubleJumpDuration_HighestValue,
-		GuiPosition() + Offset(), BarSize(),
-		GuiColorBackground, DoubleJumpDuration_RangeList
-	);
+	{
+		Vector2F margin = { 0.02f, 0.04f };
+		Vector2F size = Vector2F{ GuiSize, GuiHeight };
+		canvas.SetPosition(position - (size * margin));
+		canvas.SetColor(GuiColorBackdrop);
+		canvas.FillBox(size * ((margin * 2.f) + 1.f));
+	}
 
-	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(GuiPosition() + (Offset() * 2));
-	float JoystickBackDurationPercentage = !TotalRecordingDuration ? 0.f : 100.f * HoldingJoystickBackDuration / TotalRecordingDuration;
-	canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
+	if (GuiShowFirstJump)
+	{
+		DrawBar(
+			canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000,
+			position, BarSize(),
+			GuiColorBackground, JumpDurationRanges
+		);
+		position += Offset();
+	}
 
-	if (GuiDrawPitchHistory)
-		DrawPitchHistory(canvas);
+	if (GuiShowDoubleJump)
+	{
+		DrawBar(
+			canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000,
+			position, BarSize(),
+			GuiColorBackground, DoubleJumpDurationRanges
+		);
+		position += Offset();
+	}
 
-	if (GuiDrawBoostHistory)
-		DrawBoostHistory(canvas);
+	if (GuiShowPitchAmount)
+	{
+		canvas.SetColor(GuiColorBorder);
+		canvas.SetPosition(position);
+		float PitchUpBetweenJumpsAmount = TicksBetweenJumps == 0 ? 0 : PitchUpBetweenJumps / TicksBetweenJumps;
+		canvas.DrawString("Pitch Up Between Jumps: " + toPrecision(100 * PitchUpBetweenJumpsAmount, 1) + "%", FontSize(), FontSize());
 
-	if (GuiShowFirstInputWarning)
-		RenderFirstInputWarning(canvas);
+		position += Offset() * 0.6f;
+	}
+
+	if (GuiShowPitchHistory)
+	{
+		DrawPitchHistory(canvas, position);
+		position += Offset() * 1.2f;
+	}
+
+	if (GuiShowBoostHistory)
+	{
+		DrawBoostHistory(canvas, position);
+		position += Offset() * 0.6f;
+	}
+
+	if (GuiShowFirstInputWarning && gameWrapper->IsInCustomTraining() && TrainingStartTime < HoldFirstJumpStartTime)
+	{
+		canvas.SetColor(GuiColorBorder);
+		canvas.SetPosition(position);
+		canvas.DrawString("Jump was not first input!", FontSize(), FontSize());
+
+		position += Offset() * 0.6f;
+	}
+
+	GuiHeight = position.Y - GuiPosition().Y;
 }
 
 void FastAerialTrainer::DrawBar(
-	CanvasWrapper& canvas, std::string text, float value, float maxValue,
+	CanvasWrapper& canvas, std::string text, float value,
 	Vector2F barPos, Vector2F barSize,
-	LinearColor backgroundColor, std::vector<Range>& colorRanges
+	LinearColor backgroundColor, RangeList& colorRanges
 )
 {
+	if (colorRanges.IsEmpty())
+		return;
+
+	float minValue = colorRanges.GetTotalMin();
+	float maxValue = colorRanges.GetTotalMax();
+	auto valueToPosition = [&](float value)
+		{
+			auto ratio = (value - minValue) / (maxValue - minValue);
+			return barSize.X * std::clamp(ratio, 0.f, 1.f);
+		};
+
 	// Draw background
 	canvas.SetPosition(barPos);
 	canvas.SetColor(backgroundColor);
 	canvas.FillBox(barSize);
-	for (Range& range : colorRanges)
+
+	for (Range& range : colorRanges.GetRanges())
 	{
 		LinearColor preview = *range.color;
 		preview.A *= GuiColorPreviewOpacity;
 		canvas.SetColor(preview);
-		float left = std::min(range.min / maxValue, 1.f);
-		float width = std::min((range.max - range.min) / maxValue, 1.f - left);
-		canvas.SetPosition(barPos + Vector2F{ left * barSize.X, 0 });
-		canvas.FillBox(Vector2F{ width * barSize.X, barSize.Y });
+
+		float left = valueToPosition(range.min);
+		float right = valueToPosition(range.max);
+		float width = right - left;
+		canvas.SetPosition(barPos + Vector2F{ left, 0 });
+		canvas.FillBox(Vector2F{ width, barSize.Y });
 	}
 
 	// Draw colored bar
+	canvas.SetColor(*colorRanges.GetColorForValue(value));
 	canvas.SetPosition(barPos);
-	for (Range& range : colorRanges)
-	{
-		if (range.min <= value && value <= range.max)
-		{
-			canvas.SetColor(*range.color);
-		}
-	}
-	float result = std::min(1.f, value / maxValue);
-	canvas.FillBox(Vector2F{ barSize.X * result, barSize.Y });
+	canvas.FillBox(Vector2F{ valueToPosition(value), barSize.Y });
 
-	// Draw border
+	// Draw separators
+	// `DrawBox()` always draws lines with width `2`.
+	// By offsetting the box by one pixel (half the line width), we avoid gaps and overlaps.
+	auto offset = 1;
 	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(barPos);
-	canvas.DrawBox(barSize);
-	for (Range& range : colorRanges)
+	canvas.SetPosition(barPos - offset);
+	canvas.DrawBox(barSize + (2 * offset));
+
+	auto values = colorRanges.GetValues();
+	std::set<float> uniqueValues = std::set<float>(values.begin(), values.end());
+	for (float value : uniqueValues)
 	{
+		if (value <= minValue || maxValue <= value) continue;
+
+		auto start = barPos + Vector2F{ valueToPosition(value), 0 };
+		auto end = start + Vector2F{ 0, barSize.Y };
 		canvas.SetColor(GuiColorBorder);
-		float result = range.max / maxValue;
-		if (result < 1.f)
-		{
-			canvas.SetPosition(barPos + Vector2{ (int)(result * barSize.X), 0 });
-			canvas.FillBox(Vector2F{ 2, barSize.Y });
-		}
+		canvas.DrawLine(start, end, 2); // Line width `2` to match `DrawBox()`.
 	}
 
 	// Draw text
@@ -338,11 +418,11 @@ static void DrawCenteredText(CanvasWrapper canvas, std::string text, float fontS
 	canvas.DrawString(text, fontSize, fontSize);
 }
 
-void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
+void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F position)
 {
 	float borderWidth = 2;
 	float textWidth = 45 * FontSize();
-	Vector2F topLeft = GuiPosition() + (Offset() * 2.6f) + Vector2F{ borderWidth, 0 };
+	Vector2F topLeft = position + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = Vector2F{ GuiSize, GuiSize / 10 };
 
 	canvas.SetColor(GuiColorBorder);
@@ -359,53 +439,109 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 	canvas.SetPosition(topLeft - borderWidth);
 	canvas.DrawBox(innerBoxSize + (2 * borderWidth));
 
-	int size = (int)InputHistory.size();
-	int i = 0;
-	InputHistoryItem previousInput{};
-	for (InputHistoryItem currentInput : InputHistory)
+	if (GuiShowPitchDownInHistory)
 	{
-		if (i > 0)
-		{
-			float startX = (float)(i - 1) / (size - 1);
-			float endX = (float)i / (size - 1);
-
-			float startY = 1.f - std::clamp(previousInput.pitch, 0.f, 1.f);
-			float endY = 1.f - std::clamp(currentInput.pitch, 0.f, 1.f);
-
-			// Draw a right triangle from `start` to `end` and a rectangle beneath it.
-			Vector2F start = innerBoxSize * Vector2F{ startX, startY };
-			Vector2F end = innerBoxSize * Vector2F{ endX, endY };
-			Vector2F base = start.Y > end.Y ? Vector2F{ end.X, start.Y } : Vector2F{ start.X, end.Y };
-
-			canvas.SetColor(GuiPitchHistoryColor); // Note: `FillTriangle` ignores transparency.
-			canvas.FillTriangle(base + topLeft, start + topLeft, end + topLeft);
-			canvas.SetPosition(Vector2F{ start.X, std::max(start.Y, end.Y) } + topLeft);
-			canvas.FillBox(Vector2F{ end.X - start.X, innerBoxSize.Y - std::max(start.Y, end.Y) });
-		}
-		previousInput = currentInput;
-		i++;
+		canvas.SetColor(GuiColorBorder);
+		Vector2F start = topLeft - Vector2F{ borderWidth / 2.f, 0.f } + innerBoxSize * Vector2F{ 0.f, 0.5f };
+		Vector2F end = start + Vector2F{ borderWidth, 0.f } + innerBoxSize * Vector2F{ 1.f, 0.f };
+		canvas.DrawLine(start, end, borderWidth);
 	}
 
-	i = 0;
-	for (InputHistoryItem input : InputHistory)
-	{
-		if (input.jumped)
+	// Note: `FillTriangle` ignores transparency, so we can only use opaque colors here.
+	canvas.SetColor(GuiPitchHistoryColor);
+	auto FillTriangle = [&](Vector2F p1, Vector2F p2, Vector2F p3)
 		{
-			canvas.SetColor(GuiColorBorder);
-			Vector2F start = topLeft + Vector2F{ (float)i / size * innerBoxSize.X, 0.f };
-			Vector2F end = start + Vector2F{ 0, innerBoxSize.Y };
-			canvas.DrawLine(start, start + Vector2F{ 0,innerBoxSize.Y }, 2 * borderWidth);
+			canvas.FillTriangle(
+				p1 * innerBoxSize + topLeft,
+				p2 * innerBoxSize + topLeft,
+				p3 * innerBoxSize + topLeft
+			);
+		};
+	auto FillBox = [&](Vector2F p1, Vector2F p2)
+		{
+			canvas.SetPosition(p1 * innerBoxSize + topLeft);
+			canvas.FillBox((p2 - p1) * innerBoxSize);
+		};
+	int historySize = (int)InputHistory.size();
+	for (int i = 1; i < historySize; i++)
+	{
+		auto& previousInput = InputHistory[i - 1];
+		auto& currentInput = InputHistory[i];
+
+		// Which value should represent zero in the graph.
+		// All x,y values are between 0 and 1, where (0,0) is top left.
+		float zero;
+		float startX = (float)(i - 1) / (historySize - 1);
+		float endX = (float)i / (historySize - 1);
+		float startY;
+		float endY;
+
+		if (GuiShowPitchDownInHistory)
+		{
+			zero = 0.5f;
+			startY = 0.5f * (1.f - previousInput.pitch);
+			endY = 0.5f * (1.f - currentInput.pitch);
 		}
-		i++;
+		else
+		{
+			zero = 1.f;
+			startY = 1.f - std::clamp(previousInput.pitch, 0.f, 1.f);
+			endY = 1.f - std::clamp(currentInput.pitch, 0.f, 1.f);
+		}
+
+		Vector2F start = Vector2F{ startX, startY };
+		Vector2F end = Vector2F{ endX, endY };
+
+		if (startY < zero && endY < zero) // Above zero
+		{
+			// Draw a right triangle from `start` to `end` and a rectangle beneath it.
+			Vector2F base = startY > endY ? Vector2F{ endX, startY } : Vector2F{ startX, endY };
+
+			FillTriangle(base, start, end);
+			FillBox(Vector2F{ startX, std::max(startY, endY) }, Vector2F{ endX, zero });
+		}
+		else if (startY > zero && endY > zero) // Below zero
+		{
+			// Draw a right triangle from `start` to `end` and a rectangle above it.
+			Vector2F base = startY < endY ? Vector2F{ endX, startY } : Vector2F{ startX, endY };
+
+			FillTriangle(base, start, end);
+			FillBox(Vector2F{ startX, zero }, Vector2F{ endX, std::min(startY, endY) });
+		}
+		else // Through zero
+		{
+			// Draw two right triangles from `start` to `end`.
+			auto slope = (endY - startY) / (endX - startX);
+			auto centerX = startX + (zero - startY) / slope;
+
+			Vector2F baseLeft = Vector2F{ startX, zero };
+			Vector2F baseCenter = Vector2F{ centerX , zero };
+			Vector2F baseRight = Vector2F{ endX, zero };
+
+			FillTriangle(start, baseLeft, baseCenter);
+			FillTriangle(end, baseRight, baseCenter);
+		}
+	}
+
+	for (int i = 0; i < historySize; i++)
+	{
+		auto& input = InputHistory[i];
+
+		if (!input.jumped)
+			continue;
+
+		canvas.SetColor(GuiColorBorder);
+		Vector2F start = topLeft + Vector2F{ (float)i / historySize * innerBoxSize.X, 0.f };
+		Vector2F end = start + Vector2F{ 0, innerBoxSize.Y };
+		canvas.DrawLine(start, end, 2 * borderWidth);
 	}
 }
 
-void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
+void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas, Vector2F position)
 {
 	float borderWidth = 2;
 	float textWidth = 45 * FontSize();
-	Vector2F offset = Offset() * (GuiDrawPitchHistory ? 3.8f : 2.6f);
-	Vector2F topLeft = GuiPosition() + offset + Vector2F{ borderWidth, 0 };
+	Vector2F topLeft = position + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = BarSize();
 
 	canvas.SetColor(GuiColorBorder);
@@ -434,22 +570,6 @@ void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
 		}
 		i++;
 	}
-}
-
-void FastAerialTrainer::RenderFirstInputWarning(CanvasWrapper& canvas)
-{
-	if (!gameWrapper->IsInCustomTraining()) return;
-	if (TrainingStartTime >= HoldFirstJumpStartTime) return;
-
-	float offset = 2.6f;
-	if (GuiDrawPitchHistory) offset += 1.2f;
-	if (GuiDrawBoostHistory) offset += 0.6f;
-
-	Vector2F position = GuiPosition() + Offset() * offset;
-
-	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(position);
-	canvas.DrawString("Jump was not first input!", FontSize(), FontSize());
 }
 
 void FastAerialTrainer::onUnload()
