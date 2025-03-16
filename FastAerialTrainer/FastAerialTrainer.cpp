@@ -75,8 +75,11 @@ void FastAerialTrainer::onLoad()
 	registerPercentCvar(GUI_POSITION_RELATIVE_Y, GuiPositionRelative.Y);
 	registerFloatCvar(GUI_SIZE, GuiSize);
 	registerPercentCvar(GUI_PREVIEW_OPACTIY, GuiColorPreviewOpacity);
-	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiDrawPitchHistory);
-	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiDrawBoostHistory);
+	registerBoolCvar(GUI_SHOW_FIRST_JUMP, GuiShowFirstJump);
+	registerBoolCvar(GUI_SHOW_DOUBLE_JUMP, GuiShowDoubleJump);
+	registerBoolCvar(GUI_SHOW_PITCH_AMOUNT, GuiShowPitchAmount);
+	registerBoolCvar(GUI_DRAW_PITCH_HISTORY, GuiShowPitchHistory);
+	registerBoolCvar(GUI_DRAW_BOOST_HISTORY, GuiShowBoostHistory);
 	registerBoolCvar(GUI_SHOW_FIRST_INPUT_WARNING, GuiShowFirstInputWarning);
 	registerColorCvar(GUI_BORDER_COLOR, GuiColorBorder);
 	registerColorCvar(GUI_BACKGROUND_COLOR, GuiColorBackground);
@@ -260,31 +263,54 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 {
 	ScreenSize = canvas.GetSize();
 
-	DrawBar(
-		canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000,
-		GuiPosition(), BarSize(),
-		GuiColorBackground, JumpDurationRanges
-	);
+	Vector2F position = GuiPosition();
 
-	DrawBar(
-		canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000,
-		GuiPosition() + Offset(), BarSize(),
-		GuiColorBackground, DoubleJumpDurationRanges
-	);
+	if (GuiShowFirstJump)
+	{
+		DrawBar(
+			canvas, "Hold First Jump: ", HoldFirstJumpDuration * 1000,
+			position, BarSize(),
+			GuiColorBackground, JumpDurationRanges
+		);
+		position += Offset();
+	}
 
-	canvas.SetColor(GuiColorBorder);
-	canvas.SetPosition(GuiPosition() + (Offset() * 2));
-	float JoystickBackDurationPercentage = !TotalRecordingDuration ? 0.f : 100.f * HoldingJoystickBackDuration / TotalRecordingDuration;
-	canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
+	if (GuiShowDoubleJump)
+	{
+		DrawBar(
+			canvas, "Time to Double Jump: ", TimeBetweenFirstAndDoubleJump * 1000,
+			position, BarSize(),
+			GuiColorBackground, DoubleJumpDurationRanges
+		);
+		position += Offset();
+	}
 
-	if (GuiDrawPitchHistory)
-		DrawPitchHistory(canvas);
+	if (GuiShowPitchAmount)
+	{
+		canvas.SetColor(GuiColorBorder);
+		canvas.SetPosition(position);
+		float JoystickBackDurationPercentage = !TotalRecordingDuration ? 0.f : 100.f * HoldingJoystickBackDuration / TotalRecordingDuration;
+		canvas.DrawString("Pitch Up Amount: " + toPrecision(JoystickBackDurationPercentage, 1) + "%", FontSize(), FontSize());
 
-	if (GuiDrawBoostHistory)
-		DrawBoostHistory(canvas);
+		position += Offset() * 0.6f;
+	}
+
+	if (GuiShowPitchHistory)
+	{
+		DrawPitchHistory(canvas, position);
+		position += Offset() * 1.2f;
+	}
+
+	if (GuiShowBoostHistory)
+	{
+		DrawBoostHistory(canvas, position);
+		position += Offset() * 0.6f;
+	}
 
 	if (GuiShowFirstInputWarning)
-		RenderFirstInputWarning(canvas);
+	{
+		RenderFirstInputWarning(canvas, position);
+	}
 }
 
 void FastAerialTrainer::DrawBar(
@@ -360,11 +386,11 @@ static void DrawCenteredText(CanvasWrapper canvas, std::string text, float fontS
 	canvas.DrawString(text, fontSize, fontSize);
 }
 
-void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
+void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F position)
 {
 	float borderWidth = 2;
 	float textWidth = 45 * FontSize();
-	Vector2F topLeft = GuiPosition() + (Offset() * 2.6f) + Vector2F{ borderWidth, 0 };
+	Vector2F topLeft = position + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = Vector2F{ GuiSize, GuiSize / 10 };
 
 	canvas.SetColor(GuiColorBorder);
@@ -422,12 +448,11 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas)
 	}
 }
 
-void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
+void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas, Vector2F position)
 {
 	float borderWidth = 2;
 	float textWidth = 45 * FontSize();
-	Vector2F offset = Offset() * (GuiDrawPitchHistory ? 3.8f : 2.6f);
-	Vector2F topLeft = GuiPosition() + offset + Vector2F{ borderWidth, 0 };
+	Vector2F topLeft = position + Vector2F{ borderWidth, 0 };
 	Vector2F innerBoxSize = BarSize();
 
 	canvas.SetColor(GuiColorBorder);
@@ -458,16 +483,10 @@ void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas)
 	}
 }
 
-void FastAerialTrainer::RenderFirstInputWarning(CanvasWrapper& canvas)
+void FastAerialTrainer::RenderFirstInputWarning(CanvasWrapper& canvas, Vector2F position)
 {
 	if (!gameWrapper->IsInCustomTraining()) return;
 	if (TrainingStartTime >= HoldFirstJumpStartTime) return;
-
-	float offset = 2.6f;
-	if (GuiDrawPitchHistory) offset += 1.2f;
-	if (GuiDrawBoostHistory) offset += 0.6f;
-
-	Vector2F position = GuiPosition() + Offset() * offset;
 
 	canvas.SetColor(GuiColorBorder);
 	canvas.SetPosition(position);

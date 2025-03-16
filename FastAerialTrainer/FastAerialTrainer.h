@@ -19,11 +19,14 @@ constexpr auto GUI_PREVIEW_OPACTIY = "fast_aerial_trainer_gui_preview_opacity";
 constexpr auto GUI_COLOR_SUCCESS = "fast_aerial_trainer_gui_color_success";
 constexpr auto GUI_COLOR_WARNING = "fast_aerial_trainer_gui_color_warning";
 constexpr auto GUI_COLOR_FAILURE = "fast_aerial_trainer_gui_color_failure";
+constexpr auto GUI_COLOR_HISTORY = "fast_aerial_trainer_gui_color_history";
 constexpr auto GUI_JUMP_RANGES = "fast_aerial_trainer_gui_jump_ranges";
 constexpr auto GUI_DOUBLE_JUMP_RANGES = "fast_aerial_trainer_gui_double_jump_ranges";
+constexpr auto GUI_SHOW_FIRST_JUMP = "fast_aerial_trainer_gui_show_first_jump";
+constexpr auto GUI_SHOW_DOUBLE_JUMP = "fast_aerial_trainer_gui_show_double_jump";
+constexpr auto GUI_SHOW_PITCH_AMOUNT = "fast_aerial_trainer_gui_show_pitch_amount";
 constexpr auto GUI_DRAW_PITCH_HISTORY = "fast_aerial_trainer_gui_draw_pitch_history";
 constexpr auto GUI_DRAW_BOOST_HISTORY = "fast_aerial_trainer_gui_draw_boost_history";
-constexpr auto GUI_COLOR_HISTORY = "fast_aerial_trainer_gui_color_history";
 constexpr auto GUI_SHOW_FIRST_INPUT_WARNING = "fast_aerial_trainer_gui_first_input_warning";
 
 struct InputHistoryItem
@@ -104,8 +107,12 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 		}
 	);
 	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
-	bool GuiDrawPitchHistory = true;
-	bool GuiDrawBoostHistory = true;
+
+	bool GuiShowFirstJump = true;
+	bool GuiShowDoubleJump = true;
+	bool GuiShowPitchAmount = true;
+	bool GuiShowPitchHistory = true;
+	bool GuiShowBoostHistory = true;
 	bool GuiShowFirstInputWarning = true;
 
 
@@ -119,9 +126,9 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 
 	void RenderCanvas(CanvasWrapper canvas);
 	void DrawBar(CanvasWrapper& canvas, std::string text, float value, Vector2F barPos, Vector2F barSize, LinearColor backgroundColor, RangeList& colorRanges);
-	void DrawPitchHistory(CanvasWrapper& canvas);
-	void DrawBoostHistory(CanvasWrapper& canvas);
-	void RenderFirstInputWarning(CanvasWrapper& canvas);
+	void DrawPitchHistory(CanvasWrapper& canvas, Vector2F position);
+	void DrawBoostHistory(CanvasWrapper& canvas, Vector2F position);
+	void RenderFirstInputWarning(CanvasWrapper& canvas, Vector2F position);
 
 	virtual void onLoad();
 	virtual void onUnload();

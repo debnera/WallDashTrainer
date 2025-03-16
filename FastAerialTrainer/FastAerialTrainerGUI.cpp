@@ -53,6 +53,24 @@ void FastAerialTrainer::RenderSettings()
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("For clearest text use multiples of 350 pixels.");
 
+	if (ImGui::Checkbox("Show First Jump Timing", &GuiShowFirstJump))
+		cvarManager->getCvar(GUI_SHOW_FIRST_JUMP).setValue(GuiShowFirstJump);
+
+	if (ImGui::Checkbox("Show Double Jump Timing", &GuiShowDoubleJump))
+		cvarManager->getCvar(GUI_SHOW_DOUBLE_JUMP).setValue(GuiShowDoubleJump);
+
+	if (ImGui::Checkbox("Show Pitch Amount Text", &GuiShowPitchAmount))
+		cvarManager->getCvar(GUI_SHOW_PITCH_AMOUNT).setValue(GuiShowPitchAmount);
+
+	if (ImGui::Checkbox("Draw Pitch History", &GuiShowPitchHistory))
+		cvarManager->getCvar(GUI_DRAW_PITCH_HISTORY).setValue(GuiShowPitchHistory);
+
+	if (ImGui::Checkbox("Draw Boost History", &GuiShowBoostHistory))
+		cvarManager->getCvar(GUI_DRAW_BOOST_HISTORY).setValue(GuiShowBoostHistory);
+
+	if (ImGui::Checkbox("Show First Input Warning in Custom Training", &GuiShowFirstInputWarning))
+		cvarManager->getCvar(GUI_SHOW_FIRST_INPUT_WARNING).setValue(GuiShowFirstInputWarning);
+
 	if (ColorPicker("Border and Text Color", GuiColorBorder))
 		cvarManager->getCvar(GUI_BORDER_COLOR).setValue(GuiColorBorder);
 
@@ -71,17 +89,8 @@ void FastAerialTrainer::RenderSettings()
 	if (ColorPicker("Failure Color", GuiColorFailure))
 		cvarManager->getCvar(GUI_COLOR_FAILURE).setValue(GuiColorFailure);
 
-	if (ImGui::Checkbox("Draw Pitch History", &GuiDrawPitchHistory))
-		cvarManager->getCvar(GUI_DRAW_PITCH_HISTORY).setValue(GuiDrawPitchHistory);
-
-	if (ImGui::Checkbox("Draw Boost History", &GuiDrawBoostHistory))
-		cvarManager->getCvar(GUI_DRAW_BOOST_HISTORY).setValue(GuiDrawBoostHistory);
-
 	if (ColorPickerWithoutAlpha("Pitch/Boost History Color", GuiPitchHistoryColor))
 		cvarManager->getCvar(GUI_COLOR_HISTORY).setValue(GuiPitchHistoryColor);
-
-	if (ImGui::Checkbox("Show First Input Warning in Custom Training", &GuiShowFirstInputWarning))
-		cvarManager->getCvar(GUI_SHOW_FIRST_INPUT_WARNING).setValue(GuiShowFirstInputWarning);
 
 	SpacedSeparator();
 
