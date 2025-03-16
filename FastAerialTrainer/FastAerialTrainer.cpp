@@ -35,28 +35,38 @@ void FastAerialTrainer::onLoad()
 
 	auto registerIntCvar = [this](std::string label, int& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getIntValue(); });
 		};
 	auto registerFloatCvar = [this](std::string label, float& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getFloatValue(); });
 		};
 	auto registerPercentCvar = [this](std::string label, float& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false, true, 0.0f, true, 1.0f)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true, true, 0.0f, true, 1.0f)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getFloatValue(); });
 		};
 	auto registerBoolCvar = [this](std::string label, bool& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getBoolValue(); });
 		};
 	auto registerColorCvar = [this](std::string label, LinearColor& value)
 		{
-			persistentStorage->RegisterPersistentCvar(label, to_string(value), "", false)
+			persistentStorage->RegisterPersistentCvar(label, to_string(value), "", true)
 				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar) { value = cvar.getColorValue(); });
+		};
+	auto registerRangeListCvar = [this](std::string label, RangeList& rangeList)
+		{
+			persistentStorage->RegisterPersistentCvar(label, rangeList.ValuesToString(), "", true)
+				.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
+					{
+						auto values = RangeList::SplitString(cvar.getStringValue());
+						rangeList.UpdateValues(values);
+					}
+				);
 		};
 
 	registerBoolCvar(PLUGIN_ENABLED, PluginEnabled);
@@ -74,18 +84,8 @@ void FastAerialTrainer::onLoad()
 	registerColorCvar(GUI_COLOR_WARNING, GuiColorWarning);
 	registerColorCvar(GUI_COLOR_FAILURE, GuiColorFailure);
 	registerColorCvar(GUI_COLOR_HISTORY, GuiPitchHistoryColor);
-	persistentStorage->RegisterPersistentCvar(GUI_JUMP_RANGES, JumpDurationRanges.ValuesToString(), "", false)
-		.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
-			{
-				auto values = RangeList::SplitString(cvar.getStringValue());
-				JumpDurationRanges.UpdateValues(values);
-			});
-	persistentStorage->RegisterPersistentCvar(GUI_DOUBLE_JUMP_RANGES, DoubleJumpDurationRanges.ValuesToString(), "", false)
-		.addOnValueChanged([&](std::string oldValue, CVarWrapper cvar)
-			{
-				auto values = RangeList::SplitString(cvar.getStringValue());
-				DoubleJumpDurationRanges.UpdateValues(values);
-			});
+	registerRangeListCvar(GUI_JUMP_RANGES, JumpDurationRanges);
+	registerRangeListCvar(GUI_DOUBLE_JUMP_RANGES, DoubleJumpDurationRanges);
 
 	gameWrapper->RegisterDrawable(
 		[this](CanvasWrapper canvas)
