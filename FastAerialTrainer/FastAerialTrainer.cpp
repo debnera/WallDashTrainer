@@ -141,10 +141,7 @@ void FastAerialTrainer::onLoad()
 		}
 	);
 
-	// Double jump
-	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
-		"Function CarComponent_DoubleJump_TA.Active.BeginState",
-		[this](CarComponentWrapper component, void* params, std::string eventName)
+	auto OnSecondJump = [this](CarComponentWrapper component)
 		{
 			if (IsInReplay || !IsActive()) return;
 			if (!IsLocalCar(component.GetCar())) return;
@@ -154,6 +151,24 @@ void FastAerialTrainer::onLoad()
 				DoubleJumpPressedTime = GetCurrentTime();
 
 			DoubleJumpPossible = false;
+		};
+
+	// Double jump
+	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
+		"Function CarComponent_DoubleJump_TA.Active.BeginState",
+		[this, OnSecondJump](CarComponentWrapper component, ...)
+		{
+			OnSecondJump(component);
+		}
+	);
+
+	// Dodge
+	gameWrapper->HookEventWithCaller<CarComponentWrapper>(
+		"Function CarComponent_Dodge_TA.Active.BeginState",
+		[this, OnSecondJump](CarComponentWrapper component, ...)
+		{
+			// Treat dodging the same as double-jumping, since players might dodge by accident.
+			OnSecondJump(component);
 		}
 	);
 
