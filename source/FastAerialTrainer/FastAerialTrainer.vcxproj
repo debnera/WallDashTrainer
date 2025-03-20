@@ -112,6 +112,7 @@
     <ClCompile Include="FastAerialTrainerGUI.cpp" />
     <ClCompile Include="PersistentStorage.cpp" />
     <ClCompile Include="RangeList.cpp" />
+    <ClCompile Include="TransparentTriangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GuiBase.h" />
@@ -134,6 +135,7 @@
     <ClInclude Include="FastAerialTrainer.h" />
     <ClInclude Include="PersistentStorage.h" />
     <ClInclude Include="RangeList.h" />
+    <ClInclude Include="TransparentTriangle.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>

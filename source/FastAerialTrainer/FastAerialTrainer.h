@@ -4,6 +4,7 @@
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "PersistentStorage.h"
 #include "RangeList.h"
+#include "TransparentTriangle.h"
 
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -41,6 +42,7 @@ struct InputHistoryItem
 class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
 {
 	std::shared_ptr<PersistentStorage> persistentStorage;
+	std::shared_ptr<TransparentTriangle> transparentTriangle;
 
 
 	// Settings
@@ -109,7 +111,7 @@ class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Sett
 			 &GuiColorFailure
 		}
 	);
-	LinearColor GuiPitchHistoryColor = LinearColor(240, 240, 240, 255);
+	LinearColor GuiPitchHistoryColor = LinearColor(255, 255, 255, 239);
 
 	bool GuiShowFirstJump = true;
 	bool GuiShowDoubleJump = true;

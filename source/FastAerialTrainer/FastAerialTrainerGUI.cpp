@@ -9,14 +9,6 @@ static bool ColorPicker(const char* label, LinearColor& color)
 	return retVal;
 }
 
-static bool ColorPickerWithoutAlpha(const char* label, LinearColor& color)
-{
-	LinearColor col = color / 255;
-	bool retVal = ImGui::ColorEdit3(label, &col.R);
-	color = col * 255;
-	return retVal;
-}
-
 static bool PercentageSlider(const char* label, float& value, float max = 1.f)
 {
 	float x = value * 100;
@@ -95,7 +87,7 @@ void FastAerialTrainer::RenderSettings()
 	if (ColorPicker("Failure Color", GuiColorFailure))
 		cvarManager->getCvar(GUI_COLOR_FAILURE).setValue(GuiColorFailure);
 
-	if (ColorPickerWithoutAlpha("Pitch/Boost History Color", GuiPitchHistoryColor))
+	if (ColorPicker("Pitch/Boost History Color", GuiPitchHistoryColor))
 		cvarManager->getCvar(GUI_COLOR_HISTORY).setValue(GuiPitchHistoryColor);
 
 	SpacedSeparator();

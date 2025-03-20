@@ -33,6 +33,9 @@ void FastAerialTrainer::onLoad()
 
 	persistentStorage = std::make_shared<PersistentStorage>(this, "fast_aerial_trainer", true, true);
 
+	auto triangleImage = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "FastAerialTrainer" / "triangle.png");
+	transparentTriangle = std::make_shared<TransparentTriangle>(triangleImage);
+
 	auto registerIntCvar = [this](std::string label, int& value)
 		{
 			persistentStorage->RegisterPersistentCvar(label, std::to_string(value), "", true)
@@ -447,11 +450,14 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F positio
 		canvas.DrawLine(start, end, borderWidth);
 	}
 
-	// Note: `FillTriangle` ignores transparency, so we can only use opaque colors here.
 	canvas.SetColor(GuiPitchHistoryColor);
 	auto FillTriangle = [&](Vector2F p1, Vector2F p2, Vector2F p3)
 		{
-			canvas.FillTriangle(
+			if (p1.Y == p2.Y && p2.Y == p3.Y) 
+				return;
+
+			transparentTriangle->Render(
+				canvas,
 				p1 * innerBoxSize + topLeft,
 				p2 * innerBoxSize + topLeft,
 				p3 * innerBoxSize + topLeft
@@ -492,7 +498,11 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F positio
 		Vector2F start = Vector2F{ startX, startY };
 		Vector2F end = Vector2F{ endX, endY };
 
-		if (startY < zero && endY < zero) // Above zero
+		if (startY == zero && endY == zero)
+		{
+			// Do nothing...
+		}
+		else if (startY < zero && endY < zero) // Above zero
 		{
 			// Draw a right triangle from `start` to `end` and a rectangle beneath it.
 			Vector2F base = startY > endY ? Vector2F{ endX, startY } : Vector2F{ startX, endY };
