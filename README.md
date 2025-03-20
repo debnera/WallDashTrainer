@@ -21,7 +21,7 @@ The optimal value here is 200ms. See [RLBot - Jumping Physics](https://github.co
 How long it took you to press the jump button a second time after letting go of it.  
 Faster is better.
 
-### Pitch Up Amount
+### Pitch Up Between Jumps
 
 Measures your pitch back input between leaving the ground and double-jumping. It takes into account aerial sensitivity.  
 Higher is better: 100% means you pitched upwards fully. 50% could mean you pitched back half for the whole duration or you pitched back fully for half the time.
