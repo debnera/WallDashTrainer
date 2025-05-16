@@ -3,7 +3,7 @@
 
 std::string SettingsWindowBase::GetPluginName()
 {
-	return "FastAerialTrainer";
+	return "WallDashTrainer";
 }
 
 void SettingsWindowBase::SetImGuiContext(uintptr_t ctx)
@@ -13,7 +13,7 @@ void SettingsWindowBase::SetImGuiContext(uintptr_t ctx)
 
 std::string PluginWindowBase::GetMenuName()
 {
-	return "FastAerialTrainer";
+	return "WallDashTrainer";
 }
 
 std::string PluginWindowBase::GetMenuTitle()

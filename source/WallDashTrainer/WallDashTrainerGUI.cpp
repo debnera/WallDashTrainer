@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "FastAerialTrainer.h"
+#include "WallDashTrainer.h"
 
 static bool ColorPicker(const char* label, LinearColor& color)
 {
@@ -24,7 +24,7 @@ static void SpacedSeparator()
 	ImGui::Spacing();
 }
 
-void FastAerialTrainer::RenderSettings()
+void WallDashTrainer::RenderSettings()
 {
 	if (ImGui::Checkbox("Enable Plugin", &PluginEnabled))
 		cvarManager->getCvar(PLUGIN_ENABLED).setValue(PluginEnabled);
@@ -127,7 +127,7 @@ void FastAerialTrainer::RenderSettings()
 	ImGui::PopID();
 }
 
-void FastAerialTrainer::RenderRangePicker(RangeList& rangeList, const char* cvar, std::vector<const char*> labels)
+void WallDashTrainer::RenderRangePicker(RangeList& rangeList, const char* cvar, std::vector<const char*> labels)
 {
 	float speed = 0.1f;
 	const char* format = "%.1f ms";

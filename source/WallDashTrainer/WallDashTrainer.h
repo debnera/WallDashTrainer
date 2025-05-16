@@ -39,7 +39,7 @@ struct InputHistoryItem
 	bool jumped;
 };
 
-class FastAerialTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
+class WallDashTrainer : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase
 {
 	std::shared_ptr<PersistentStorage> persistentStorage;
 	std::shared_ptr<TransparentTriangle> transparentTriangle;

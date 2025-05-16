@@ -1,15 +1,15 @@
 #include "pch.h"
-#include "FastAerialTrainer.h"
+#include "WallDashTrainer.h"
 
 #include <sstream>
 #include <set>
 
 
-BAKKESMOD_PLUGIN(FastAerialTrainer, "FastAerialTrainer", plugin_version, PLUGINTYPE_FREEPLAY);
+BAKKESMOD_PLUGIN(WallDashTrainer, "WallDashTrainer", plugin_version, PLUGINTYPE_FREEPLAY);
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
-float FastAerialTrainer::GetCurrentTime()
+float WallDashTrainer::GetCurrentTime()
 {
 	ServerWrapper server = gameWrapper->GetCurrentGameState();
 	if (!server) return 0;
@@ -26,14 +26,14 @@ static std::string to_string(LinearColor col)
 		+ std::to_string((int)col.A) + ")";
 }
 
-void FastAerialTrainer::onLoad()
+void WallDashTrainer::onLoad()
 {
 	// This line is required for `LOG` to work and must be before any use of `LOG()`.
 	_globalCvarManager = cvarManager;
 
 	persistentStorage = std::make_shared<PersistentStorage>(this, "fast_aerial_trainer", true, true);
 
-	auto triangleImage = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "FastAerialTrainer" / "triangle.png");
+	auto triangleImage = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "WallDashTrainer" / "triangle.png");
 	transparentTriangle = std::make_shared<TransparentTriangle>(triangleImage);
 
 	auto registerIntCvar = [this](std::string label, int& value)
@@ -100,7 +100,7 @@ void FastAerialTrainer::onLoad()
 		{
 			if (!IsActive()) return;
 
-			FastAerialTrainer::RenderCanvas(canvas);
+			WallDashTrainer::RenderCanvas(canvas);
 		}
 	);
 
@@ -114,7 +114,7 @@ void FastAerialTrainer::onLoad()
 			auto input = static_cast<ControllerInput*>(params);
 			if (!input) return;
 
-			FastAerialTrainer::OnTick(car, input);
+			WallDashTrainer::OnTick(car, input);
 		}
 	);
 
@@ -220,20 +220,20 @@ void FastAerialTrainer::onLoad()
 	);
 }
 
-bool FastAerialTrainer::IsActive()
+bool WallDashTrainer::IsActive()
 {
 	return PluginEnabled
 		&& !gameWrapper->IsPaused()
 		&& (gameWrapper->IsInFreeplay() || gameWrapper->IsInCustomTraining());
 }
 
-bool FastAerialTrainer::IsLocalCar(CarWrapper car)
+bool WallDashTrainer::IsLocalCar(CarWrapper car)
 {
 	CarWrapper localCar = gameWrapper->GetLocalCar();
 	return car.memory_address == localCar.memory_address;
 }
 
-void FastAerialTrainer::OnTick(CarWrapper car, ControllerInput* input)
+void WallDashTrainer::OnTick(CarWrapper car, ControllerInput* input)
 {
 	float now = GetCurrentTime();
 
@@ -280,7 +280,7 @@ static std::string toPrecision(float x, int precision)
 	return stream.str();
 }
 
-void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
+void WallDashTrainer::RenderCanvas(CanvasWrapper canvas)
 {
 	ScreenSize = canvas.GetSize();
 
@@ -348,7 +348,7 @@ void FastAerialTrainer::RenderCanvas(CanvasWrapper canvas)
 	GuiHeight = position.Y - GuiPosition().Y;
 }
 
-void FastAerialTrainer::DrawBar(
+void WallDashTrainer::DrawBar(
 	CanvasWrapper& canvas, std::string text, float value,
 	Vector2F barPos, Vector2F barSize,
 	LinearColor backgroundColor, RangeList& colorRanges
@@ -421,7 +421,7 @@ static void DrawCenteredText(CanvasWrapper canvas, std::string text, float fontS
 	canvas.DrawString(text, fontSize, fontSize);
 }
 
-void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F position)
+void WallDashTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F position)
 {
 	float borderWidth = 2;
 	float textWidth = 45 * FontSize();
@@ -547,7 +547,7 @@ void FastAerialTrainer::DrawPitchHistory(CanvasWrapper& canvas, Vector2F positio
 	}
 }
 
-void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas, Vector2F position)
+void WallDashTrainer::DrawBoostHistory(CanvasWrapper& canvas, Vector2F position)
 {
 	float borderWidth = 2;
 	float textWidth = 45 * FontSize();
@@ -582,7 +582,7 @@ void FastAerialTrainer::DrawBoostHistory(CanvasWrapper& canvas, Vector2F positio
 	}
 }
 
-void FastAerialTrainer::onUnload()
+void WallDashTrainer::onUnload()
 {
 	// nothing to unload...
 }

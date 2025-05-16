@@ -9,7 +9,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{06456c30-0395-428b-9640-940791def526}</ProjectGuid>
-    <RootNamespace>FastAerialTrainer</RootNamespace>
+    <RootNamespace>WallDashTrainer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -108,8 +108,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="FastAerialTrainer.cpp" />
-    <ClCompile Include="FastAerialTrainerGUI.cpp" />
+    <ClCompile Include="WallDashTrainer.cpp" />
+    <ClCompile Include="WallDashTrainerGUI.cpp" />
     <ClCompile Include="PersistentStorage.cpp" />
     <ClCompile Include="RangeList.cpp" />
     <ClCompile Include="TransparentTriangle.cpp" />
@@ -132,14 +132,14 @@
     <ClInclude Include="IMGUI\imgui_stdlib.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="FastAerialTrainer.h" />
+    <ClInclude Include="WallDashTrainer.h" />
     <ClInclude Include="PersistentStorage.h" />
     <ClInclude Include="RangeList.h" />
     <ClInclude Include="TransparentTriangle.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="FastAerialTrainer.rc" />
+    <ResourceCompile Include="WallDashTrainer.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
