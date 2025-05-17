@@ -29,66 +29,11 @@ void WallDashTrainer::RenderSettings()
 	if (ImGui::Checkbox("Enable Plugin", &PluginEnabled))
 		cvarManager->getCvar(PLUGIN_ENABLED).setValue(PluginEnabled);
 
-	if (ImGui::DragFloat("Record After Double Jump", &RecordingAfterDoubleJump, 0.005f, 0, FLT_MAX, "%.1f seconds"))
-		cvarManager->getCvar(RECORD_AFTER_DOUBLE_JUMP).setValue(RecordingAfterDoubleJump);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Sets how long after the double jump the input recording should stop.");
-
-	if (PercentageSlider("GUI Position X", GuiPositionRelative.X))
-		cvarManager->getCvar(GUI_POSITION_RELATIVE_X).setValue(GuiPositionRelative.X);
-
-	if (PercentageSlider("GUI Position Y", GuiPositionRelative.Y))
-		cvarManager->getCvar(GUI_POSITION_RELATIVE_Y).setValue(GuiPositionRelative.Y);
-
-	if (ImGui::SliderFloat("GUI Size", &GuiSize, 0, ScreenSize.X, "%.0f pixels"))
-		cvarManager->getCvar(GUI_SIZE).setValue(GuiSize);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("For clearest text use multiples of 350 pixels.");
-
 	if (ImGui::Checkbox("Show First Jump Timing", &GuiShowFirstJump))
 		cvarManager->getCvar(GUI_SHOW_FIRST_JUMP).setValue(GuiShowFirstJump);
 
 	if (ImGui::Checkbox("Show Double Jump Timing", &GuiShowDoubleJump))
 		cvarManager->getCvar(GUI_SHOW_DOUBLE_JUMP).setValue(GuiShowDoubleJump);
-
-	if (ImGui::Checkbox("Show Pitch Up Amount Between Jumps", &GuiShowPitchAmount))
-		cvarManager->getCvar(GUI_SHOW_PITCH_AMOUNT).setValue(GuiShowPitchAmount);
-
-	if (ImGui::Checkbox("Draw Pitch History", &GuiShowPitchHistory))
-		cvarManager->getCvar(GUI_DRAW_PITCH_HISTORY).setValue(GuiShowPitchHistory);
-
-	if (ImGui::Checkbox("Show Pitch Down in History", &GuiShowPitchDownInHistory))
-		cvarManager->getCvar(GUI_SHOW_PITCH_DOWN_IN_HISTORY).setValue(GuiShowPitchDownInHistory);
-
-	if (ImGui::Checkbox("Draw Boost History", &GuiShowBoostHistory))
-		cvarManager->getCvar(GUI_DRAW_BOOST_HISTORY).setValue(GuiShowBoostHistory);
-
-	if (ImGui::Checkbox("Show First Input Warning in Custom Training", &GuiShowFirstInputWarning))
-		cvarManager->getCvar(GUI_SHOW_FIRST_INPUT_WARNING).setValue(GuiShowFirstInputWarning);
-
-	if (ColorPicker("Border and Text Color", GuiColorBorder))
-		cvarManager->getCvar(GUI_BORDER_COLOR).setValue(GuiColorBorder);
-
-	if (ColorPicker("Bar Background Color", GuiColorBackground))
-		cvarManager->getCvar(GUI_BACKGROUND_COLOR).setValue(GuiColorBackground);
-
-	if (ColorPicker("Backdrop Color", GuiColorBackdrop))
-		cvarManager->getCvar(GUI_BACKDROP_COLOR).setValue(GuiColorBackdrop);
-
-	if (PercentageSlider("Color Preview Opacity", GuiColorPreviewOpacity, 0.5))
-		cvarManager->getCvar(GUI_PREVIEW_OPACTIY).setValue(GuiColorPreviewOpacity);
-
-	if (ColorPicker("Success Color", GuiColorSuccess))
-		cvarManager->getCvar(GUI_COLOR_SUCCESS).setValue(GuiColorSuccess);
-
-	if (ColorPicker("Warning Color", GuiColorWarning))
-		cvarManager->getCvar(GUI_COLOR_WARNING).setValue(GuiColorWarning);
-
-	if (ColorPicker("Failure Color", GuiColorFailure))
-		cvarManager->getCvar(GUI_COLOR_FAILURE).setValue(GuiColorFailure);
-
-	if (ColorPicker("Pitch/Boost History Color", GuiPitchHistoryColor))
-		cvarManager->getCvar(GUI_COLOR_HISTORY).setValue(GuiPitchHistoryColor);
 
 	SpacedSeparator();
 
@@ -99,8 +44,6 @@ void WallDashTrainer::RenderSettings()
 		JumpDurationRanges,
 		GUI_JUMP_RANGES,
 		{
-			"Failure Low",
-			"Warning Low",
 			"Success Low",
 			"Success High",
 			"Warning High",
@@ -125,6 +68,81 @@ void WallDashTrainer::RenderSettings()
 		}
 	);
 	ImGui::PopID();
+
+	SpacedSeparator();
+
+	if (PercentageSlider("GUI Position X", GuiPositionRelative.X))
+		cvarManager->getCvar(GUI_POSITION_RELATIVE_X).setValue(GuiPositionRelative.X);
+
+	if (PercentageSlider("GUI Position Y", GuiPositionRelative.Y))
+		cvarManager->getCvar(GUI_POSITION_RELATIVE_Y).setValue(GuiPositionRelative.Y);
+
+	if (ImGui::SliderFloat("GUI Size", &GuiSize, 0, ScreenSize.X, "%.0f pixels"))
+		cvarManager->getCvar(GUI_SIZE).setValue(GuiSize);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("For clearest text use multiples of 350 pixels.");
+	if (ImGui::Button("Reset position and size to default"))
+	{
+		ResetGUIPositionCVars();
+	}
+
+	SpacedSeparator();
+
+	if (ColorPicker("Border and Text Color", GuiColorBorder))
+		cvarManager->getCvar(GUI_BORDER_COLOR).setValue(GuiColorBorder);
+
+	if (ColorPicker("Bar Background Color", GuiColorBackground))
+		cvarManager->getCvar(GUI_BACKGROUND_COLOR).setValue(GuiColorBackground);
+
+	if (ColorPicker("Backdrop Color", GuiColorBackdrop))
+		cvarManager->getCvar(GUI_BACKDROP_COLOR).setValue(GuiColorBackdrop);
+
+	if (PercentageSlider("Color Preview Opacity", GuiColorPreviewOpacity, 0.5))
+		cvarManager->getCvar(GUI_PREVIEW_OPACTIY).setValue(GuiColorPreviewOpacity);
+
+	if (ColorPicker("Success Color", GuiColorSuccess))
+		cvarManager->getCvar(GUI_COLOR_SUCCESS).setValue(GuiColorSuccess);
+
+	if (ColorPicker("Warning Color", GuiColorWarning))
+		cvarManager->getCvar(GUI_COLOR_WARNING).setValue(GuiColorWarning);
+
+	if (ColorPicker("Failure Color", GuiColorFailure))
+		cvarManager->getCvar(GUI_COLOR_FAILURE).setValue(GuiColorFailure);
+	if (ImGui::Button("Reset colors to default"))
+	{
+		ResetColorCVars();
+	}
+}
+
+void WallDashTrainer::ResetGUIPositionCVars()
+{
+	std::vector<const char*> cvars = {
+		GUI_SIZE,
+		GUI_POSITION_RELATIVE_X,
+		GUI_POSITION_RELATIVE_Y,
+	};
+    
+	for (const auto& cvar : cvars)
+	{
+		cvarManager->getCvar(cvar).ResetToDefault();
+	}
+}
+
+void WallDashTrainer::ResetColorCVars()
+{
+	std::vector<const char*> cvars = {
+		GUI_BORDER_COLOR,
+		GUI_BACKGROUND_COLOR,
+		GUI_BACKDROP_COLOR,
+		GUI_COLOR_SUCCESS,
+		GUI_COLOR_WARNING,
+		GUI_COLOR_FAILURE
+	};
+    
+	for (const auto& cvar : cvars)
+	{
+		cvarManager->getCvar(cvar).ResetToDefault();
+	}
 }
 
 void WallDashTrainer::RenderRangePicker(RangeList& rangeList, const char* cvar, std::vector<const char*> labels)
