@@ -275,7 +275,7 @@ void WallDashTrainer::RenderCanvas(CanvasWrapper canvas)
 	if (GuiShowDoubleJump)
 	{
 		DrawBar(
-			canvas, "Time Between Jumps: ", TimeBetweenFirstAndDoubleJump * 1000,
+			canvas, "Total Time Between Jumps: ", TimeBetweenFirstAndDoubleJump * 1000,
 			position, BarSize(),
 			GuiColorBackground, DoubleJumpDurationRanges
 		);

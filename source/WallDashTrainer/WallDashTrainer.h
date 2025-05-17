@@ -74,7 +74,7 @@ class WallDashTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Settin
 	LinearColor GuiColorWarning = LinearColor(255, 255, 0, 210);
 	LinearColor GuiColorFailure = LinearColor(255, 0, 0, 210);
 	RangeList JumpDurationRanges = RangeList(
-		{  0, 80, 80, 90 },
+		{  0, 85, 85, 120 },
 		{
 			 &GuiColorSuccess,
 			 &GuiColorWarning,
@@ -82,7 +82,7 @@ class WallDashTrainer : public BakkesMod::Plugin::BakkesModPlugin, public Settin
 		}
 	);
 	RangeList DoubleJumpDurationRanges = RangeList(
-		{ 0, 85, 95, 130 },
+		{ 0, 85, 95, 120 },
 		{
 			 &GuiColorSuccess,
 			 &GuiColorWarning,
