@@ -5,7 +5,10 @@ A simple timer that shows how close you are to successfully performing wall dash
 To perform wall dashes, you need to be able to double jump with roughly 90 ms or less between the jumps.
 Works in freeplay and custom training.
 
-This plugin was modified from the [Fast Aerial Trainer [Improved]](https://bakkesplugins.com/plugins/view/514) made by Vync and Josef37.
+This plugin was modified from the [Fast Aerial Trainer [Improved]](https://bakkesplugins.com/plugins/view/514) that was originally made by Vync and improved by Josef37.
+
+![walldashtrainer](https://github.com/user-attachments/assets/d870d839-0c42-4ea4-adce-e1cc5c09e0df)
+
 
 
 ## Features
